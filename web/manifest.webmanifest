@@ -1,5 +1,5 @@
 {
-  "name": "스타볼 예측",
+  "name": "스타볼 예측기",
   "short_name": "스타볼",
   "description": "LG 트윈스 스타볼 미션에 입력할 값을 데이터로 계산합니다.",
   "start_url": "./",

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#131011">
-<title>스타볼 예측</title>
+<title>스타볼 예측기</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -48,6 +48,8 @@
   .tiny { font-size: 11px; line-height: 1.5; }
 
   h1 { font-size: 17px; font-weight: 600; margin: 0; }
+  /* 라틴 서체용 자간이라 한글에는 넓어 보인다. .ko 로 되돌린다. */
+  .eyebrow.ko { font-family: inherit; font-size: 13px; letter-spacing: -0.01em; }
   .eyebrow { font-family: Archivo, sans-serif; font-size: 11px; font-weight: 600;
              letter-spacing: .16em; color: var(--accent); }
 
@@ -166,7 +168,7 @@ function viewToday() {
 
   return `
   <div class="row" style="align-items:baseline">
-    <span class="eyebrow">STARBALL</span>
+    <span class="eyebrow ko">스타볼 예측기</span>
     <span class="small muted num">${esc(g.date.slice(5).replace("-", "월 "))}일</span>
   </div>
 
@@ -465,6 +467,22 @@ function installed() {
   return window.navigator.standalone === true ||
          window.matchMedia("(display-mode: standalone)").matches;
 }
+// 카톡·네이버 앱 안에서 열렸는지. 앱 내 브라우저는 알림을 켤 수 없다.
+// 안드로이드 카톡은 WebView 라 푸시 등록 자체가 안 되고, 아이폰 카톡에는
+// '홈 화면에 추가' 가 있는 공유 버튼이 없다. 그런데도 버튼을 보여주면
+// 눌러도 안 되는 것을 눌러보게 만든다.
+function inAppBrowser() {
+  const ua = navigator.userAgent;
+  if (/KAKAOTALK/i.test(ua)) return "카카오톡";
+  if (/NAVER\(inapp/i.test(ua)) return "네이버 앱";
+  if (/Instagram|FBAN|FBAV/i.test(ua)) return "SNS 앱";
+  if (/Line\//i.test(ua)) return "라인";
+  if (/DaumApps|everytimeApp/i.test(ua)) return "앱 내 브라우저";
+  // 안드로이드 WebView 공통 표식. 위에서 안 걸린 앱들을 잡는다.
+  if (/; wv\)/.test(ua)) return "앱 내 브라우저";
+  return null;
+}
+
 function canPush() {
   return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
 }
@@ -488,6 +506,18 @@ async function renderNotif() {
       const r = await fetch("api/health", { cache: "no-store" });
       pushOK = r.ok ? (await r.json()).kv === true : false;
     } catch { pushOK = false; }
+  }
+
+  // 앱 내 브라우저가 가장 먼저다. 여기서 걸러내지 않으면 아래 분기들이
+  // 있지도 않은 버튼('사파리 아래 공유')을 안내하게 된다.
+  const app = inAppBrowser();
+  if (app && !installed()) {
+    notifBox.innerHTML = card(`${app} 안에서 열렸어요`,
+      `알림을 받으려면 브라우저로 열어야 합니다.<br>
+       <b>아이폰</b> 오른쪽 아래 <b>⋯</b> → <b>Safari로 열기</b><br>
+       <b>안드로이드</b> 오른쪽 위 <b>⋮</b> → <b>다른 브라우저로 열기</b><br>
+       <span class="muted">브라우저로 열기 어려우시면 ${calHtml()} — 여기서도 됩니다.</span>`);
+    return;
   }
 
   // 아이폰은 애플 정책상 홈 화면에 추가된 웹앱에만 알림이 허용된다.
