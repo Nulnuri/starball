@@ -1,7 +1,7 @@
 // 홈화면에서 열었을 때 껍데기가 즉시 뜨게 하고, 데이터는 항상 새로 받는다.
 // 예측값을 캐시에서 주면 어제 값을 보여주게 되므로 절대 캐시하지 않는다.
-const SHELL = "starball-shell-v2";
-const FILES = ["./index.html", "./manifest.webmanifest",
+const SHELL = "starball-shell-v3";
+const FILES = ["./", "./manifest.webmanifest",
                "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
@@ -18,6 +18,31 @@ self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== location.origin) return;
   if (url.pathname.startsWith("/api/")) return;   // 구독 API 는 캐시 대상이 아니다
+
+  // 화면 이동 요청은 언제나 앱 껍데기를 준다.
+  //
+  // Cloudflare Pages 는 /index.html 을 / 로 308 리다이렉트한다. 그런데
+  // 리다이렉트를 거쳐 캐시된 응답을 내비게이션에 그대로 돌려주면 브라우저가
+  // 거부하고 "사이트에 연결할 수 없음" 을 띄운다. 알림을 눌러도 앱이 열리지
+  // 않던 원인이 이것이다. 그래서 경로가 뭐든 './' 로 맞춰 응답한다.
+  //
+  // 문서(/docs/…)는 별개의 페이지라 가로채면 안 된다 — 앱 껍데기가 대신
+  // 떠서 문서를 볼 수 없게 된다.
+  if (e.request.mode === "navigate") {
+    const root = new URL("./", location).pathname;
+    const here = url.pathname.replace(/index\.html$/, "");
+    if (here !== root) return;                    // 문서 등은 그냥 네트워크
+    e.respondWith((async () => {
+      const shell = await caches.match("./");
+      if (shell && !shell.redirected) return shell;
+      try {
+        return await fetch(e.request);
+      } catch (err) {
+        return shell || Response.error();
+      }
+    })());
+    return;
+  }
 
   // 데이터는 네트워크 우선. 오프라인이면 마지막으로 성공한 응답을 준다.
   if (url.pathname.endsWith("today.json") || url.pathname.endsWith("history.json")) {
@@ -61,7 +86,7 @@ self.addEventListener("push", e => {
 // 새 창을 무조건 열면 홈화면 웹앱이 여러 개 겹친다.
 self.addEventListener("notificationclick", e => {
   e.notification.close();
-  const target = (e.notification.data && e.notification.data.url) || "./index.html";
+  const target = (e.notification.data && e.notification.data.url) || "./";
   e.waitUntil((async () => {
     const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     for (const w of wins) {

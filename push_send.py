@@ -20,6 +20,7 @@ ntfy 는 내가 쓰는 채널이고, 이쪽은 지인용이다. 지인은 앱을
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 import sys
@@ -40,6 +41,29 @@ KST = timezone(timedelta(hours=9))
 # 푸시 서비스가 이 상태를 주면 그 구독은 영구히 끝난 것이다.
 # 그 밖의 실패(429, 5xx)는 다음 실행에서 다시 시도한다.
 DEAD = (404, 410)
+
+
+def normalize_vapid_key(text: str) -> str:
+    """어떤 형태로 들어와도 pywebpush 가 받는 형태로 바꾼다.
+
+    pywebpush 는 내부에서 py_vapid 의 Vapid.from_string() 을 쓰는데, 그 함수는
+    PEM 을 읽지 못한다 — 개행만 지우고 base64 디코드를 시도하므로
+    '-----BEGIN PRIVATE KEY-----' 헤더에서 깨진다. 받는 형태는 두 가지다:
+    32바이트 원시 키(base64url) 또는 헤더 없는 DER.
+
+    그런데 키를 파일·Secret 으로 보관하기 편한 형태는 PEM 이다. 그래서 여기서
+    PEM 이면 32바이트 원시 키로 바꿔 넘긴다. 이 변환이 없으면 발송이
+    'Could not deserialize key data' 한 줄만 남기고 실패해서, 키가 틀린 건지
+    형식이 틀린 건지 알 수 없다.
+    """
+    t = text.strip().replace(chr(13), "")
+    if "BEGIN" not in t:
+        return t                      # 이미 원시 키 또는 DER
+
+    from py_vapid import Vapid02
+    v = Vapid02.from_pem(t.encode())
+    d = v.private_key.private_numbers().private_value
+    return base64.urlsafe_b64encode(d.to_bytes(32, "big")).decode().rstrip("=")
 
 
 def log(msg: str) -> None:
@@ -94,7 +118,7 @@ def build_payload(today: dict, reminder: bool, site: str) -> dict | None:
                          + (f"  {p*100:.0f}%" if isinstance(p, (int, float)) else ""))
         body = "\n".join(lines)
 
-    return {"title": title, "body": body, "url": f"{site}/index.html",
+    return {"title": title, "body": body, "url": f"{site}/",
             "tag": "starball"}
 
 
@@ -140,7 +164,7 @@ def main() -> int:
                 "이 알림이 보이면 설정이 끝났습니다.",
                 f"{now:%m월 %d일 %H:%M} 발송",
             ]),
-            "url": f"{site}/index.html",
+            "url": f"{site}/",
             # 실제 알림과 tag 를 다르게 둔다. 같으면 테스트가 그날의 예측
             # 알림을 조용히 덮어쓴다.
             "tag": "starball-test",
@@ -195,10 +219,16 @@ def _deliver(site: str, payload: dict, dry_run: bool = False) -> int:
         return 0
 
     secret = os.environ.get("PUSH_SEND_SECRET", "").strip()
-    priv = os.environ.get("VAPID_PRIVATE_KEY", "").strip()
-    if not secret or not priv:
+    priv_raw = os.environ.get("VAPID_PRIVATE_KEY", "").strip()
+    if not secret or not priv_raw:
         log("VAPID_PRIVATE_KEY / PUSH_SEND_SECRET 이 없어 웹 푸시를 건너뜁니다")
         return 0
+    try:
+        priv = normalize_vapid_key(priv_raw)
+    except Exception as e:
+        log(f"VAPID_PRIVATE_KEY 를 읽을 수 없습니다: {type(e).__name__} {str(e)[:70]}")
+        log("   PEM 전체(BEGIN/END 줄 포함)를 그대로 넣었는지 확인하세요.")
+        return 1
 
     # 무거운 의존성이라 실제로 보낼 때만 불러온다.
     from pywebpush import WebPushException, webpush

@@ -96,6 +96,47 @@ def test_payload_fits_push_limit():
     assert len(raw) < 3000, len(raw)
 
 
+def test_vapid_pem_is_converted_for_pywebpush():
+    """pywebpush 는 PEM 을 못 읽는다 — 32바이트 원시 키로 바꿔 넘겨야 한다.
+
+    이걸 빼면 발송이 'Could not deserialize key data' 한 줄만 남기고 조용히
+    실패한다. 실제로 첫 발송이 이것 때문에 실패했다.
+    """
+    import base64
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+    import py_vapid
+
+    key = ec.generate_private_key(ec.SECP256R1())
+    pem = key.private_bytes(serialization.Encoding.PEM,
+                            serialization.PrivateFormat.PKCS8,
+                            serialization.NoEncryption()).decode()
+    want = base64.urlsafe_b64encode(
+        key.public_key().public_bytes(
+            serialization.Encoding.X962,
+            serialization.PublicFormat.UncompressedPoint)).decode().rstrip("=")
+
+    for label, text in (("PEM", pem),
+                        ("CR 섞인 PEM", pem.replace(NL, chr(13) + NL)),
+                        ("앞뒤 공백", "  " + pem + "  ")):
+        raw = P.normalize_vapid_key(text)
+        assert len(raw) == 43, (label, len(raw))
+        # pywebpush 가 실제로 쓰는 경로를 통과해야 한다
+        v = py_vapid.Vapid.from_string(private_key=raw)
+        got = base64.urlsafe_b64encode(
+            v.public_key.public_bytes(
+                serialization.Encoding.X962,
+                serialization.PublicFormat.UncompressedPoint)).decode().rstrip("=")
+        assert got == want, label
+
+
+def test_vapid_raw_key_passes_through():
+    """이미 원시 키면 손대지 않는다."""
+    raw = "aF3vYF5kuJoRliwXt8D1abcdefghijklmnopqrstuvw"
+    assert P.normalize_vapid_key(raw) == raw
+    assert P.normalize_vapid_key("  " + raw + NL) == raw
+
+
 # ── 캘린더 ───────────────────────────────────────────────────────────────
 
 def test_ics_escapes_special_characters():
