@@ -143,6 +143,20 @@ jobs:
           echo "::error::push 를 3번 시도했으나 실패했습니다."
           exit 1
 
+      - name: Cloudflare Pages 배포
+        # Secret 이 없으면 조용히 건너뛴다 — 깃헙 페이지 배포만으로도 앱은 돈다.
+        # 토큰은 Cloudflare Pages:Edit 권한 하나면 충분하다.
+        if: always() && (github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch')
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::notice::Cloudflare Secret 이 없어 건너뜁니다(깃헙 페이지만 배포)."
+            exit 0
+          fi
+          npx --yes wrangler@latest pages deploy web             --project-name=starball --branch=main --commit-dirty=true
+
       - name: 깃헙 페이지에 웹앱 배포
         if: always() && (github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch')
         uses: actions/upload-pages-artifact@v3
