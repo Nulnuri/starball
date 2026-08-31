@@ -72,9 +72,13 @@ def build_today(ctx: S.GameContext, pred: S.Prediction, picks: list) -> dict:
         p = by_key.get(k)
         if not p or k not in best:
             continue
+        sk = S.QUESTION_SKILL.get(k) or {}
         missions.append({
             "n": i, "key": k, "label": q["label"],
             "pick": best[k],
+            # 이 문항을 얼마나 믿을지. 화면이 그대로 보여준다.
+            "skill": {"hit": sk.get("hit"), "base": sk.get("base"),
+                      "gain": sk.get("gain")} if sk else None,
             # 조합 최적해의 확률을 보여준다. 문항별 1위와 다를 수 있고,
             # 그 경우 화면에 나가야 하는 값은 조합 쪽이다.
             "prob": round(pred.probs.get(k, {}).get(best[k], 0.0), 4),

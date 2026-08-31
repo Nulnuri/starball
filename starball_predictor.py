@@ -195,9 +195,12 @@ def _load_base_rates() -> None:
 # 절제 실험(ablation.py) 결과 전체 모델 53.2% vs '항상 홈팀' 51.7% = +1.5%p,
 # 이것도 표준오차 ±2.1%p 안이다.
 QUESTION_SKILL = {
-    "outcome": +2.4,     # 전 구단 468경기 기준. 표준오차 ±2.3%p 안이라 미확정
-    "margin": None,      # 실제 선택지 확인 후 backtest.py 로 재측정 필요
-    "lg_hr": None,
+    # 실측 적중률과 '최빈만 찍기' 대비 개선폭(%p).
+    # LG 96경기 시점고정 백테스트, 0~10 정확값 구조 기준.
+    # 화면에 그대로 띄운다 — 사용자가 문항별로 얼마나 믿을지 스스로 정하게.
+    "outcome": {"hit": 54.2, "base": 52.1, "gain": +2.1},
+    "margin":  {"hit": 25.0, "base": 26.1, "gain": -1.1},
+    "lg_hr":   {"hit": 36.5, "base": 36.5, "gain": +0.0},
 }
 SKILL_THRESHOLD = 2.0
 
@@ -1509,7 +1512,8 @@ def to_starball_choices(pred: Prediction) -> list:
             "pick": best_label, "prob": best_p, "edge": best_p - runner_p,
             "note": q.get("note", ""),
             "skill": QUESTION_SKILL.get(q["key"]),
-            "has_skill": (QUESTION_SKILL.get(q["key"]) or 0.0) >= SKILL_THRESHOLD,
+            "has_skill": ((QUESTION_SKILL.get(q["key"]) or {}).get("gain", 0.0)
+                          >= SKILL_THRESHOLD),
             "exp": pred.exp.get(q.get("source")),
             "all": list(probs.items()),
         })
@@ -1593,8 +1597,8 @@ def render(ctx: GameContext, pred: Prediction, picks: list) -> str:
         bits = [f"{p['prob']*100:.1f}%", f"2위와 {p['edge']*100:+.1f}%p"]
         if p.get("note"):
             bits.append(p["note"])
-        if p.get("skill") is not None:
-            bits.append(f"실측 {p['skill']:+.1f}%p")
+        if p.get("skill"):
+            bits.append(f"실측 {p['skill']['hit']:.0f}%")
         if not p["has_skill"]:
             flag = "  ← 과거 검증 실패, 참고만"
         elif p["edge"] < NTFY_COINFLIP_EDGE:

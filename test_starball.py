@@ -296,7 +296,7 @@ def test_skill_gating_is_wired():
     ctx = S.context_from_fixture(_snap())
     picks = S.to_starball_choices(S.predict(ctx, n_sim=5000))
     for p in picks:
-        expected = (S.QUESTION_SKILL.get(p["key"]) or 0.0) >= S.SKILL_THRESHOLD
+        expected = (S.QUESTION_SKILL.get(p["key"]) or {}).get("gain", 0.0) >= S.SKILL_THRESHOLD
         assert p["has_skill"] is expected
 
 

@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-31T13:51:32+09:00",
+ "generated": "2026-08-31T15:04:07+09:00",
  "game": {
   "date": "2026-09-01",
   "time": "18:30",
@@ -14,6 +14,11 @@
    "key": "outcome",
    "label": "승패 맞히기",
    "pick": "승",
+   "skill": {
+    "hit": 54.2,
+    "base": 52.1,
+    "gain": 2.1
+   },
    "prob": 0.4691,
    "options": [
     {
@@ -35,6 +40,11 @@
    "key": "margin",
    "label": "득실 차 맞히기",
    "pick": "1점",
+   "skill": {
+    "hit": 25.0,
+    "base": 26.1,
+    "gain": -1.1
+   },
    "prob": 0.1917,
    "options": [
     {
@@ -88,6 +98,11 @@
    "key": "lg_hr",
    "label": "홈런 수 맞히기",
    "pick": "0개",
+   "skill": {
+    "hit": 36.5,
+    "base": 36.5,
+    "gain": 0.0
+   },
    "prob": 0.4226,
    "options": [
     {

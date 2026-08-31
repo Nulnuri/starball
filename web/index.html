@@ -233,6 +233,20 @@ function viewWhy() {
 
   <details open>
     <summary><span style="display:flex;align-items:center;gap:9px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 7v5c0 4.5 3.2 8.2 8 9 4.8-.8 8-4.5 8-9V7z"/><path d="m9 12 2 2 4-4"/></svg>
+      <b class="small">이 추천을 얼마나 믿을까</b></span>${chev}</summary>
+    <div class="pad col" style="gap:11px">
+      ${D.missions.filter(m => m.skill).map(m => trustRow(m)).join("")}
+      <div class="tiny muted" style="border-top:1px solid var(--surface-2);padding-top:9px">
+        LG 96경기를 그날 시점 데이터로 다시 계산해 잰 값입니다.
+        <b>최빈</b>은 아무 계산 없이 가장 흔한 값만 매번 찍었을 때고,
+        모델이 그보다 못하면 그 문항은 사실상 운입니다.
+      </div>
+    </div>
+  </details>
+
+  <details open>
+    <summary><span style="display:flex;align-items:center;gap:9px">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"><path d="M4 20 20 4"/><circle cx="6.5" cy="17.5" r="2.5"/></svg>
       <b class="small">선발 매치업</b></span>${chev}</summary>
     <div class="pad col" style="gap:13px">
@@ -382,6 +396,32 @@ function logRow(g) {
           ok ? "스타볼 +1" : `${g.score.lg}-${g.score.opp}`}</span></span>
       <span class="tiny muted num" style="display:flex;gap:6px;flex-wrap:wrap">${line}${actual}</span>
     </span></div>`;
+}
+
+function trustRow(m) {
+  const s = m.skill, good = s.gain >= 2.0;
+  const w = v => Math.max(2, Math.min(100, v)).toFixed(0);
+  const verdict = good ? "모델이 낫습니다"
+    : s.gain <= -1 ? "최빈보다 못합니다" : "최빈과 같습니다";
+  const col = good ? "var(--ok)" : "var(--ink-faint)";
+  return `<div class="col" style="gap:6px">
+    <div class="row" style="align-items:baseline">
+      <span class="small">${esc(m.label)}</span>
+      <span class="tiny" style="color:${col}">${esc(verdict)}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="tiny muted" style="width:34px">모델</span>
+      <span style="flex-grow:1;height:5px;background:var(--surface-2);border-radius:3px;display:flex">
+        <i style="width:${w(s.hit)}%;background:${col};border-radius:3px"></i></span>
+      <span class="num tiny" style="width:34px;text-align:right;color:${col}">${s.hit.toFixed(0)}%</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="tiny muted" style="width:34px">최빈</span>
+      <span style="flex-grow:1;height:5px;background:var(--surface-2);border-radius:3px;display:flex">
+        <i style="width:${w(s.base)}%;background:var(--line-2);border-radius:3px"></i></span>
+      <span class="num tiny muted" style="width:34px;text-align:right">${s.base.toFixed(0)}%</span>
+    </div>
+  </div>`;
 }
 
 function empty(title, sub) {
