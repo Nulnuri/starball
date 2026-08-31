@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>스타볼 예측 · 문서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+  :root { --ground:#131011; --surface:#1C1719; --line:#2A2326;
+          --ink:#EDE6E8; --soft:#A79BA0; --faint:#7A6F74; --accent:#F0245C; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);
+       font-family:"IBM Plex Sans KR",system-ui,sans-serif;line-height:1.7}
+  .wrap{max-width:34rem;margin:0 auto;padding:clamp(2.5rem,8vw,5rem) 1.4rem 4rem}
+  .eyebrow{font-family:Archivo,sans-serif;font-size:.7rem;font-weight:600;
+           letter-spacing:.16em;color:var(--accent);margin:0 0 .8rem}
+  h1{font-size:1.6rem;font-weight:600;margin:0 0 .6rem;letter-spacing:-.01em}
+  p.lede{color:var(--soft);font-size:.95rem;margin:0 0 2.2rem}
+  a.card{display:block;background:var(--surface);border:1px solid var(--line);
+         border-radius:4px;padding:1rem 1.1rem;margin-bottom:.7rem;
+         text-decoration:none;color:inherit}
+  a.card:hover,a.card:focus-visible{border-color:var(--accent);outline:none}
+  a.card b{display:block;font-size:1rem;font-weight:600;margin-bottom:.2rem}
+  a.card span{font-size:.85rem;color:var(--faint)}
+  .back{display:inline-block;margin-top:1.6rem;font-size:.85rem;color:var(--accent);
+        text-decoration:none}
+  footer{margin-top:2.6rem;padding-top:1.2rem;border-top:1px solid var(--line);
+         font-size:.78rem;color:var(--faint)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">STARBALL</p>
+  <h1>문서</h1>
+  <p class="lede">LG 트윈스 스타볼 매치데이 미션에 넣을 값을 데이터로 계산하는 도구입니다.</p>
+
+  <a class="card" href="setup.html">
+    <b>설치 안내</b>
+    <span>깃헙에 올려 알림과 웹앱을 받는 절차 8단계 · 개발 지식 없어도 따라올 수 있게</span>
+  </a>
+  <a class="card" href="architecture.html">
+    <b>구조 문서</b>
+    <span>아키텍처, 네이버 API 계약, 모델 수식, 백테스트 결과와 남은 약점</span>
+  </a>
+
+  <a class="back" href="../">← 앱으로</a>
+
+  <footer>
+    네이버 스포츠 공개 기록으로 계산한 확률입니다. 결과를 보장하지 않습니다.
+  </footer>
+</div>
+</body>
+</html>

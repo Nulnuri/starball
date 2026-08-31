@@ -1,0 +1,198 @@
+{
+ "_설명": "스타볼 실제 문항으로 이 파일을 고치면 코드 수정 없이 반영됩니다.",
+ "_source_목록": "outcome, margin_abs, total_runs, lg_runs, opp_runs, lg_sp_er, opp_sp_er, lg_hr, opp_hr, total_hr, lg_hit, opp_hit, total_hit, lg_k, opp_k, total_k",
+ "_buckets_형식": "[라벨, 하한, 상한] · null 은 열린 구간 · 경계 포함",
+ "questions": [
+  {
+   "key": "outcome",
+   "label": "LG 승패",
+   "source": "outcome",
+   "categorical": [
+    [
+     "승",
+     "win"
+    ],
+    [
+     "무",
+     "draw"
+    ],
+    [
+     "패",
+     "lose"
+    ]
+   ]
+  },
+  {
+   "key": "margin",
+   "label": "점수 차",
+   "source": "margin_abs",
+   "note": "무승부 제외 조건부",
+   "buckets": [
+    [
+     "1점 차",
+     1,
+     1
+    ],
+    [
+     "2~3점 차",
+     2,
+     3
+    ],
+    [
+     "4점 차 이상",
+     4,
+     null
+    ]
+   ]
+  },
+  {
+   "key": "total_hr",
+   "label": "양 팀 합계 홈런",
+   "source": "total_hr",
+   "buckets": [
+    [
+     "0개",
+     0,
+     0
+    ],
+    [
+     "1~2개",
+     1,
+     2
+    ],
+    [
+     "3개 이상",
+     3,
+     null
+    ]
+   ]
+  },
+  {
+   "key": "lg_hr",
+   "label": "LG 홈런",
+   "source": "lg_hr",
+   "buckets": [
+    [
+     "0개",
+     0,
+     0
+    ],
+    [
+     "1개",
+     1,
+     1
+    ],
+    [
+     "2개 이상",
+     2,
+     null
+    ]
+   ]
+  },
+  {
+   "key": "lg_sp_er",
+   "label": "LG 선발 자책점",
+   "source": "lg_sp_er",
+   "buckets": [
+    [
+     "0~1점",
+     0,
+     1
+    ],
+    [
+     "2~3점",
+     2,
+     3
+    ],
+    [
+     "4점 이상",
+     4,
+     null
+    ]
+   ]
+  },
+  {
+   "key": "opp_sp_er",
+   "label": "상대 선발 자책점",
+   "source": "opp_sp_er",
+   "buckets": [
+    [
+     "0~1점",
+     0,
+     1
+    ],
+    [
+     "2~3점",
+     2,
+     3
+    ],
+    [
+     "4점 이상",
+     4,
+     null
+    ]
+   ]
+  },
+  {
+   "key": "total_runs",
+   "label": "양 팀 합계 득점",
+   "source": "total_runs",
+   "buckets": [
+    [
+     "8점 이하",
+     null,
+     8
+    ],
+    [
+     "9점 이상",
+     9,
+     null
+    ]
+   ]
+  },
+  {
+   "key": "total_hit",
+   "label": "양 팀 합계 안타",
+   "source": "total_hit",
+   "buckets": [
+    [
+     "15개 이하",
+     null,
+     15
+    ],
+    [
+     "16~20개",
+     16,
+     20
+    ],
+    [
+     "21개 이상",
+     21,
+     null
+    ]
+   ]
+  },
+  {
+   "key": "total_k",
+   "label": "양 팀 합계 삼진",
+   "source": "total_k",
+   "buckets": [
+    [
+     "12개 이하",
+     null,
+     12
+    ],
+    [
+     "13~17개",
+     13,
+     17
+    ],
+    [
+     "18개 이상",
+     18,
+     null
+    ]
+   ]
+  }
+ ]
+}

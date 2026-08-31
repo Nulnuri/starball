@@ -1,0 +1,488 @@
+{
+ "updated": "2026-08-31T13:52:31+09:00",
+ "starballs": 1,
+ "goal": 7,
+ "settled": 14,
+ "allHit": 1,
+ "rate": 0.0714,
+ "replayed": 14,
+ "live": 0,
+ "perMission": {
+  "outcome": {
+   "label": "승패 맞히기",
+   "hit": 8,
+   "total": 14
+  },
+  "margin": {
+   "label": "득실 차 맞히기",
+   "hit": 3,
+   "total": 14
+  },
+  "lg_hr": {
+   "label": "홈런 수 맞히기",
+   "hit": 4,
+   "total": 14
+  }
+ },
+ "games": [
+  {
+   "date": "2026-09-01",
+   "opp": "두산",
+   "home": false,
+   "picks": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "settled": false,
+   "belief": {
+    "outcome": {
+     "승": 0.4691,
+     "무": 0.0818,
+     "패": 0.4491
+    },
+    "margin": {
+     "0점": 0.0765,
+     "1점": 0.1917,
+     "2점": 0.1609,
+     "3점": 0.1302,
+     "4점": 0.1033,
+     "5점": 0.0943,
+     "6점": 0.0738,
+     "7점": 0.0592,
+     "8점": 0.0459,
+     "9점": 0.031,
+     "10점": 0.0332
+    },
+    "lg_hr": {
+     "0개": 0.4226,
+     "1개": 0.281,
+     "2개": 0.1272,
+     "3개": 0.0528,
+     "4개": 0.0225,
+     "5개": 0.0172,
+     "6개": 0.0156,
+     "7개": 0.0153,
+     "8개": 0.0153,
+     "9개": 0.0153,
+     "10개": 0.0153
+    }
+   },
+   "jointProb": 0.056,
+   "baseline": 0.0664,
+   "expScore": {
+    "lg": 4.6,
+    "opp": 4.5,
+    "modal": [
+     3,
+     3
+    ]
+   },
+   "starters": {
+    "lg": {
+     "name": "임찬규",
+     "era": 3.95,
+     "spot": false
+    },
+    "opp": {
+     "name": "잭로그",
+     "era": 3.94,
+     "spot": false
+    }
+   },
+   "params": {
+    "blend": 0.7,
+    "calib": 0.76,
+    "version": "2026-08-31"
+   },
+   "greedy": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "greedyProb": 0.056,
+   "actual": null,
+   "hits": null,
+   "earned": null,
+   "score": null
+  },
+  {
+   "date": "2026-08-29",
+   "opp": "롯데",
+   "home": false,
+   "picks": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "settled": true,
+   "replayed": true,
+   "actual": {
+    "outcome": "승",
+    "margin": "5점",
+    "lg_hr": "0개"
+   },
+   "hits": {
+    "outcome": true,
+    "margin": false,
+    "lg_hr": true
+   },
+   "earned": false,
+   "score": {
+    "lg": 8,
+    "opp": 3
+   }
+  },
+  {
+   "date": "2026-08-27",
+   "opp": "NC",
+   "home": true,
+   "picks": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "settled": true,
+   "replayed": true,
+   "actual": {
+    "outcome": "패",
+    "margin": "10점",
+    "lg_hr": "0개"
+   },
+   "hits": {
+    "outcome": false,
+    "margin": false,
+    "lg_hr": true
+   },
+   "earned": false,
+   "score": {
+    "lg": 3,
+    "opp": 13
+   }
+  },
+  {
+   "date": "2026-08-26",
+   "opp": "NC",
+   "home": true,
+   "picks": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "settled": true,
+   "replayed": true,
+   "actual": {
+    "outcome": "승",
+    "margin": "8점",
+    "lg_hr": "3개"
+   },
+   "hits": {
+    "outcome": true,
+    "margin": false,
+    "lg_hr": false
+   },
+   "earned": false,
+   "score": {
+    "lg": 8,
+    "opp": 0
+   }
+  },
+  {
+   "date": "2026-08-25",
+   "opp": "NC",
+   "home": true,
+   "picks": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "settled": true,
+   "replayed": true,
+   "actual": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "1개"
+   },
+   "hits": {
+    "outcome": true,
+    "margin": true,
+    "lg_hr": false
+   },
+   "earned": false,
+   "score": {
+    "lg": 5,
+    "opp": 4
+   }
+  },
+  {
+   "date": "2026-08-23",
+   "opp": "한화",
+   "home": false,
+   "picks": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "settled": true,
+   "replayed": true,
+   "actual": {
+    "outcome": "승",
+    "margin": "9점",
+    "lg_hr": "2개"
+   },
+   "hits": {
+    "outcome": true,
+    "margin": false,
+    "lg_hr": false
+   },
+   "earned": false,
+   "score": {
+    "lg": 12,
+    "opp": 3
+   }
+  },
+  {
+   "date": "2026-08-21",
+   "opp": "한화",
+   "home": false,
+   "picks": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "settled": true,
+   "replayed": true,
+   "actual": {
+    "outcome": "패",
+    "margin": "4점",
+    "lg_hr": "1개"
+   },
+   "hits": {
+    "outcome": false,
+    "margin": false,
+    "lg_hr": false
+   },
+   "earned": false,
+   "score": {
+    "lg": 11,
+    "opp": 15
+   }
+  },
+  {
+   "date": "2026-08-20",
+   "opp": "KT",
+   "home": true,
+   "picks": {
+    "outcome": "패",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "settled": true,
+   "replayed": true,
+   "actual": {
+    "outcome": "패",
+    "margin": null,
+    "lg_hr": "2개"
+   },
+   "hits": {
+    "outcome": true,
+    "margin": false,
+    "lg_hr": false
+   },
+   "earned": false,
+   "score": {
+    "lg": 4,
+    "opp": 16
+   }
+  },
+  {
+   "date": "2026-08-19",
+   "opp": "KT",
+   "home": true,
+   "picks": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "settled": true,
+   "replayed": true,
+   "actual": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "hits": {
+    "outcome": true,
+    "margin": true,
+    "lg_hr": true
+   },
+   "earned": true,
+   "score": {
+    "lg": 1,
+    "opp": 0
+   }
+  },
+  {
+   "date": "2026-08-18",
+   "opp": "KT",
+   "home": true,
+   "picks": {
+    "outcome": "패",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "settled": true,
+   "replayed": true,
+   "actual": {
+    "outcome": "승",
+    "margin": "8점",
+    "lg_hr": "1개"
+   },
+   "hits": {
+    "outcome": false,
+    "margin": false,
+    "lg_hr": false
+   },
+   "earned": false,
+   "score": {
+    "lg": 9,
+    "opp": 1
+   }
+  },
+  {
+   "date": "2026-08-16",
+   "opp": "SSG",
+   "home": true,
+   "picks": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "settled": true,
+   "replayed": true,
+   "actual": {
+    "outcome": "패",
+    "margin": "6점",
+    "lg_hr": "0개"
+   },
+   "hits": {
+    "outcome": false,
+    "margin": false,
+    "lg_hr": true
+   },
+   "earned": false,
+   "score": {
+    "lg": 0,
+    "opp": 6
+   }
+  },
+  {
+   "date": "2026-08-15",
+   "opp": "SSG",
+   "home": true,
+   "picks": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "settled": true,
+   "replayed": true,
+   "actual": {
+    "outcome": "승",
+    "margin": "3점",
+    "lg_hr": "2개"
+   },
+   "hits": {
+    "outcome": true,
+    "margin": false,
+    "lg_hr": false
+   },
+   "earned": false,
+   "score": {
+    "lg": 4,
+    "opp": 1
+   }
+  },
+  {
+   "date": "2026-08-14",
+   "opp": "SSG",
+   "home": true,
+   "picks": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "settled": true,
+   "replayed": true,
+   "actual": {
+    "outcome": "패",
+    "margin": "2점",
+    "lg_hr": "1개"
+   },
+   "hits": {
+    "outcome": false,
+    "margin": false,
+    "lg_hr": false
+   },
+   "earned": false,
+   "score": {
+    "lg": 3,
+    "opp": 5
+   }
+  },
+  {
+   "date": "2026-08-13",
+   "opp": "키움",
+   "home": false,
+   "picks": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "settled": true,
+   "replayed": true,
+   "actual": {
+    "outcome": "승",
+    "margin": "7점",
+    "lg_hr": "1개"
+   },
+   "hits": {
+    "outcome": true,
+    "margin": false,
+    "lg_hr": false
+   },
+   "earned": false,
+   "score": {
+    "lg": 13,
+    "opp": 6
+   }
+  },
+  {
+   "date": "2026-08-12",
+   "opp": "키움",
+   "home": false,
+   "picks": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "settled": true,
+   "replayed": true,
+   "actual": {
+    "outcome": "패",
+    "margin": "1점",
+    "lg_hr": "1개"
+   },
+   "hits": {
+    "outcome": false,
+    "margin": true,
+    "lg_hr": false
+   },
+   "earned": false,
+   "score": {
+    "lg": 3,
+    "opp": 4
+   }
+  }
+ ]
+}

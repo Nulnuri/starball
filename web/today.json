@@ -1,0 +1,221 @@
+{
+ "generated": "2026-08-31T13:51:32+09:00",
+ "game": {
+  "date": "2026-09-01",
+  "time": "18:30",
+  "stadium": "잠실",
+  "lg": "LG",
+  "opp": "두산",
+  "lgIsHome": false
+ },
+ "missions": [
+  {
+   "n": 1,
+   "key": "outcome",
+   "label": "승패 맞히기",
+   "pick": "승",
+   "prob": 0.4691,
+   "options": [
+    {
+     "label": "승",
+     "prob": 0.4691
+    },
+    {
+     "label": "무",
+     "prob": 0.0818
+    },
+    {
+     "label": "패",
+     "prob": 0.4491
+    }
+   ]
+  },
+  {
+   "n": 2,
+   "key": "margin",
+   "label": "득실 차 맞히기",
+   "pick": "1점",
+   "prob": 0.1917,
+   "options": [
+    {
+     "label": "0점",
+     "prob": 0.0765
+    },
+    {
+     "label": "1점",
+     "prob": 0.1917
+    },
+    {
+     "label": "2점",
+     "prob": 0.1609
+    },
+    {
+     "label": "3점",
+     "prob": 0.1302
+    },
+    {
+     "label": "4점",
+     "prob": 0.1033
+    },
+    {
+     "label": "5점",
+     "prob": 0.0943
+    },
+    {
+     "label": "6점",
+     "prob": 0.0738
+    },
+    {
+     "label": "7점",
+     "prob": 0.0592
+    },
+    {
+     "label": "8점",
+     "prob": 0.0459
+    },
+    {
+     "label": "9점",
+     "prob": 0.031
+    },
+    {
+     "label": "10점",
+     "prob": 0.0332
+    }
+   ]
+  },
+  {
+   "n": 3,
+   "key": "lg_hr",
+   "label": "홈런 수 맞히기",
+   "pick": "0개",
+   "prob": 0.4226,
+   "options": [
+    {
+     "label": "0개",
+     "prob": 0.4226
+    },
+    {
+     "label": "1개",
+     "prob": 0.281
+    },
+    {
+     "label": "2개",
+     "prob": 0.1272
+    },
+    {
+     "label": "3개",
+     "prob": 0.0528
+    },
+    {
+     "label": "4개",
+     "prob": 0.0225
+    },
+    {
+     "label": "5개",
+     "prob": 0.0172
+    },
+    {
+     "label": "6개",
+     "prob": 0.0156
+    },
+    {
+     "label": "7개",
+     "prob": 0.0153
+    },
+    {
+     "label": "8개",
+     "prob": 0.0153
+    },
+    {
+     "label": "9개",
+     "prob": 0.0153
+    },
+    {
+     "label": "10개",
+     "prob": 0.0153
+    }
+   ]
+  }
+ ],
+ "joint": {
+  "prob": 0.056,
+  "baseline": 0.0664,
+  "confidence": "낮음"
+ },
+ "score": {
+  "lg": 4.6,
+  "opp": 4.5,
+  "modal": [
+   3,
+   3
+  ]
+ },
+ "reasoning": {
+  "starters": {
+   "lg": {
+    "name": "임찬규",
+    "era": 3.95,
+    "whip": 1.36,
+    "ip": 127.7,
+    "games": 23,
+    "spot": false,
+    "vs": {
+     "foe": "두산",
+     "era": 2.04,
+     "ip": 17.7,
+     "games": 3
+    },
+    "recent": {
+     "era": 3.49,
+     "whip": 1.06,
+     "ip": 28.3,
+     "starts": 5,
+     "asStarter": 5
+    }
+   },
+   "opp": {
+    "name": "잭로그",
+    "era": 3.94,
+    "whip": 1.31,
+    "ip": 125.7,
+    "games": 23,
+    "spot": false,
+    "vs": {
+     "foe": "LG",
+     "era": 4.26,
+     "ip": 12.7,
+     "games": 3
+    },
+    "recent": {
+     "era": 3.56,
+     "whip": 1.12,
+     "ip": 30.3,
+     "starts": 5,
+     "asStarter": 5
+    }
+   }
+  },
+  "park": {
+   "name": "잠실",
+   "raw": 0.643,
+   "applied": 0.822
+  },
+  "bullpen": {
+   "lg": 5.541,
+   "opp": 4.663
+  },
+  "form": {
+   "lg": "승패승승승",
+   "opp": "승승패패승"
+  },
+  "h2h": {
+   "w": 7,
+   "l": 4,
+   "d": 1,
+   "games": 12
+  }
+ },
+ "warnings": [],
+ "starballs": 1,
+ "goal": 7
+}

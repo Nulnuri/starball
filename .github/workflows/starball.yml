@@ -1,0 +1,165 @@
+name: LG 스타볼 예측 알림
+
+on:
+  schedule:
+    # 깃헙 크론은 UTC 기준이다. 01:00 UTC = 한국시간 오전 10시.
+    # 한국시간으로 바꾸려면 원하는 시각에서 9시간을 빼면 된다.
+    #   오전 10시(KST) → 01:00 UTC   |   오후 2시(KST) → 05:00 UTC
+    # 부하에 따라 5~30분 밀릴 수 있다. 경기가 18:30이라 여유는 충분하다.
+    - cron: '0 1 * * *'
+
+    # 마감 임박 알림. 아침 알림은 경기 8시간 전에 와서 저녁이면 묻힌다.
+    # 경기 시각이 14:00 / 17:00 / 18:30 세 종류라, 각 경기가 시작 2시간쯤
+    # 전에 딱 한 번 걸리도록 세 번 돈다(KST 12:00 / 15:00 / 16:30).
+    # 해당 구간이 아니면 스크립트가 조용히 종료한다 — 알림이 두 번 가지 않는다.
+    - cron: '0 3 * * *'      # 12:00 KST → 14:00 경기
+    - cron: '0 6 * * *'      # 15:00 KST → 17:00 경기
+    - cron: '30 7 * * *'     # 16:30 KST → 18:30 경기
+
+  # Actions 탭에서 손으로 눌러 즉시 실행할 수 있게 해둔다.
+  # 처음 설정한 뒤 이걸로 한 번 테스트하는 것을 권한다.
+  workflow_dispatch:
+
+# 동시에 두 번 돌아 알림이 중복 발송되는 것을 막는다.
+concurrency:
+  group: starball
+  cancel-in-progress: false
+
+# 웹앱 파일을 깃헙 페이지로 올리기 위해 필요하다.
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  predict:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # 얕은 클론이면 아래 rebase 가 실패한다. 저장소가 작으니 전부 받는다.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: 알림 토픽 확인
+        # 공개 저장소라 코드에 박힌 기본 토픽은 누구나 볼 수 있다.
+        # 그 토픽으로 발송하면 남이 가짜 알림을 보낼 수 있으므로,
+        # Secret 을 반드시 등록하게 막는다.
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          if [ -z "$NTFY_TOPIC" ]; then
+            echo "::error::NTFY_TOPIC Secret 이 없습니다. 저장소 Settings →"
+            echo "::error::Secrets and variables → Actions 에서 등록하세요."
+            echo "::error::공개 저장소에서 기본 토픽을 쓰면 남이 알림을 보낼 수 있습니다."
+            exit 1
+          fi
+          echo "토픽 Secret 확인됨 (${#NTFY_TOPIC}자)"
+
+      - name: 마감 임박 알림
+        # 아침 실행(01:00 UTC)이 아닐 때만 돈다. 구간 밖이면 스크립트가
+        # 스스로 건너뛰므로 여기서 시각을 따로 따지지 않는다.
+        if: github.event.schedule != '0 1 * * *'
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          python starball_predictor.py --reminder
+          echo "마감 임박 알림 단계 완료"
+
+      - name: 예측 실행 및 푸시 발송
+        # 아침 실행에서만 전체 예측을 보낸다.
+        if: github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch'
+        env:
+          # 저장소 Settings → Secrets and variables → Actions 에 등록한 값.
+          # 등록하지 않으면 스크립트 기본 토픽으로 발송된다.
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          set +e
+          # --home-only 를 쓰면 안 된다. 스타볼 미션은 원정 경기에도 열린다
+          # (2026-08-28 LG@롯데 원정 경기에서 확인). 잔여 시즌 기준으로
+          # 원정이 54%라, 켜두면 절반 이상을 놓친다.
+          python starball_predictor.py --ntfy
+          code=$?
+          set -e
+          echo "종료 코드: $code"
+          case $code in
+            0)
+              echo "정상 종료 (예측 발송 완료, 또는 홈경기가 아니거나 경기 없는 날)"
+              exit 0 ;;
+            75)
+              echo "::notice::선발 예고 전이라 예측을 건너뛰었습니다. 실패가 아닙니다."
+              exit 0 ;;
+            *)
+              echo "::error::예측 실패 (코드 $code)"
+              exit $code ;;
+          esac
+
+      - name: 웹앱 데이터 갱신 (지난 경기 채점 + 오늘 예측)
+        # 알림이 실패해도 웹앱은 갱신한다. 둘은 독립적이다.
+        # 다만 하루 한 번(아침)이면 충분하다 — 마감 알림 실행에서 또 돌리면
+        # 네이버에 하루 4배로 요청하면서 얻는 게 없다.
+        if: always() && (github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch')
+        run: |
+          set +e
+          python webdata.py both
+          echo "webdata 종료 코드: $?"
+          exit 0
+
+      - name: 갱신된 데이터 커밋
+        if: always() && (github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch')
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # 파일을 하나씩 지정하면 없을 때 git add 가 실패해 잡 전체가 죽는다.
+          # 디렉터리째 넘기면 있는 것만 담는다.
+          git add -A web
+
+          # 바뀐 게 없으면 커밋하지 않는다(휴식일에 빈 커밋이 쌓이는 것 방지).
+          if git diff --staged --quiet; then
+            echo "변경 없음 — 커밋 건너뜀"
+            exit 0
+          fi
+          git commit -m "데이터 갱신 $(date -u +%Y-%m-%d)"
+
+          # 사용자가 깃헙 웹에서 파일을 고쳤으면(문항 정의 등) push 가 거부된다.
+          # 한 번 받아서 얹고 다시 시도한다.
+          for i in 1 2 3; do
+            if git push; then
+              echo "push 성공"
+              exit 0
+            fi
+            echo "push 거부 — 원격 변경을 받아 다시 시도 ($i/3)"
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || exit 1
+          done
+          echo "::error::push 를 3번 시도했으나 실패했습니다."
+          exit 1
+
+      - name: 깃헙 페이지에 웹앱 배포
+        if: always() && (github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch')
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+
+  deploy:
+    needs: predict
+    # 아티팩트를 올린 실행에서만 배포한다. 마감 알림 실행에는 올릴 게 없다.
+    if: always() && (github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,1132 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>스타볼 예측 파이프라인</title>
+<meta name="description" content="아키텍처, API 계약, 조합 최적화, 468경기 백테스트 결과.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+</head>
+<body>
+<style>
+  /* 단독 실행용 최소 리셋 */
+  *, *::before, *::after { box-sizing: border-box; }
+  img, video, svg { max-width: 100%; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  :root {
+    --ground:      #F7F8F9;
+    --surface:     #FFFFFF;
+    --surface-alt: #EDEFF1;
+    --code-bg:     #14181B;
+    --code-fg:     #E3E8EA;
+    --ink:         #15191C;
+    --ink-soft:    #4C565D;
+    --ink-faint:   #7E888F;
+    --rule:        #DDE1E4;
+    --rule-strong: #BFC6CB;
+    --accent:      #0B6E4F;
+    --accent-soft: #E4F0EB;
+    --risk:        #A3341F;
+    --risk-soft:   #F8ECE8;
+    --approx:      #8A6212;
+    --approx-soft: #F8F1E2;
+
+    --measure: 68ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #111417;
+      --surface:     #181C20;
+      --surface-alt: #202529;
+      --code-bg:     #0B0E10;
+      --code-fg:     #DDE3E6;
+      --ink:         #E7ECEE;
+      --ink-soft:    #A6B0B7;
+      --ink-faint:   #79838A;
+      --rule:        #282E33;
+      --rule-strong: #3D454B;
+      --accent:      #4FBF95;
+      --accent-soft: #10241D;
+      --risk:        #E88A70;
+      --risk-soft:   #2A1712;
+      --approx:      #D9AC5C;
+      --approx-soft: #241C0E;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #111417;
+    --surface:     #181C20;
+    --surface-alt: #202529;
+    --code-bg:     #0B0E10;
+    --code-fg:     #DDE3E6;
+    --ink:         #E7ECEE;
+    --ink-soft:    #A6B0B7;
+    --ink-faint:   #79838A;
+    --rule:        #282E33;
+    --rule-strong: #3D454B;
+    --accent:      #4FBF95;
+    --accent-soft: #10241D;
+    --risk:        #E88A70;
+    --risk-soft:   #2A1712;
+    --approx:      #D9AC5C;
+    --approx-soft: #241C0E;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Noto Sans KR", system-ui, sans-serif;
+    font-size: 15.5px;
+    line-height: 1.78;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 60rem;
+    margin: 0 auto;
+    padding: clamp(2rem, 5vw, 4rem) clamp(1.1rem, 4vw, 2.5rem) 6rem;
+  }
+
+  /* ── 표제 ─────────────────────────────────────────────────── */
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem 1.1rem;
+    font-family: "JetBrains Mono", monospace;
+    font-size: .72rem;
+    color: var(--ink-faint);
+    letter-spacing: .03em;
+    margin: 0 0 1.1rem;
+  }
+
+  h1 {
+    font-family: "Noto Serif KR", serif;
+    font-weight: 700;
+    font-size: clamp(1.9rem, 5vw, 2.7rem);
+    line-height: 1.25;
+    letter-spacing: -.02em;
+    text-wrap: balance;
+    margin: 0 0 .9rem;
+  }
+
+  .lede {
+    max-width: var(--measure);
+    font-size: 1.05rem;
+    color: var(--ink-soft);
+    margin: 0 0 3rem;
+  }
+
+  /* ── 섹션 ─────────────────────────────────────────────────── */
+  section { margin-bottom: 3.4rem; }
+
+  .kind {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .68rem;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 .3rem;
+  }
+
+  h2 {
+    font-family: "Noto Serif KR", serif;
+    font-weight: 700;
+    font-size: 1.42rem;
+    letter-spacing: -.015em;
+    margin: 0 0 1.3rem;
+    padding-bottom: .55rem;
+    border-bottom: 1px solid var(--rule-strong);
+  }
+
+  h3 {
+    font-family: "Noto Sans KR", sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    margin: 2rem 0 .6rem;
+  }
+
+  p, ul, ol { max-width: var(--measure); }
+  p { margin: 0 0 .95rem; }
+  ul { padding-left: 1.15rem; margin: 0 0 .95rem; }
+  li { margin-bottom: .3rem; }
+
+  strong { font-weight: 700; }
+  em { font-style: normal; color: var(--accent); font-weight: 500; }
+
+  code:not(pre code) {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .855em;
+    background: var(--surface-alt);
+    padding: .1em .34em;
+    border-radius: 2px;
+    color: var(--ink);
+  }
+
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* ── 코드 ─────────────────────────────────────────────────── */
+  .code {
+    margin: 1rem 0 1.3rem;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .code-name {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .72rem;
+    padding: .45rem .8rem;
+    background: var(--surface-alt);
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  pre {
+    margin: 0;
+    padding: .9rem 1rem;
+    background: var(--code-bg);
+    color: var(--code-fg);
+    overflow-x: auto;
+    font-family: "JetBrains Mono", monospace;
+    font-size: .785rem;
+    line-height: 1.72;
+  }
+
+  pre .c { color: #8B949B; }
+  pre .k { color: #7FD3B0; }
+  pre .n { color: #E8B87F; }
+
+  /* ── 표 ───────────────────────────────────────────────────── */
+  .scroll { overflow-x: auto; margin: 1.1rem 0 1.4rem; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .87rem;
+    min-width: 34rem;
+  }
+
+  th, td {
+    text-align: left;
+    padding: .58rem .75rem;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+
+  th {
+    font-weight: 700;
+    font-size: .78rem;
+    color: var(--ink-soft);
+    border-bottom: 1.5px solid var(--rule-strong);
+    white-space: nowrap;
+  }
+
+  td.mono, th.mono {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .8rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  td.nowrap { white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  /* ── 콜아웃 ───────────────────────────────────────────────── */
+  .box {
+    margin: 1.1rem 0;
+    padding: .85rem 1.05rem;
+    border-left: 3px solid var(--rule-strong);
+    background: var(--surface);
+    font-size: .92rem;
+  }
+
+  .box > :last-child { margin-bottom: 0; }
+  .box p, .box ul { max-width: none; }
+
+  .box-label {
+    display: block;
+    font-family: "JetBrains Mono", monospace;
+    font-size: .67rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    margin-bottom: .25rem;
+  }
+
+  .box.risk { border-left-color: var(--risk); background: var(--risk-soft); }
+  .box.risk .box-label { color: var(--risk); }
+  .box.approx { border-left-color: var(--approx); background: var(--approx-soft); }
+  .box.approx .box-label { color: var(--approx); }
+
+  /* ── 도해 ─────────────────────────────────────────────────── */
+  figure { margin: 1.5rem 0 1.8rem; }
+
+  .fig-scroll { overflow-x: auto; }
+
+  svg.diagram {
+    display: block;
+    width: 100%;
+    min-width: 44rem;
+    height: auto;
+    color: var(--ink);
+  }
+
+  /* 도해: 의미를 지닌 두 색만 토큰으로. 나머지는 currentColor 로 테마 추종 */
+  svg.diagram .s-accent { stroke: var(--accent); color: var(--accent); }
+  svg.diagram .f-accent { fill: var(--accent); }
+  svg.diagram .s-risk   { stroke: var(--risk); }
+  svg.diagram .f-risk   { fill: var(--risk); }
+
+  figcaption {
+    font-size: .85rem;
+    color: var(--ink-faint);
+    margin-top: .7rem;
+    max-width: var(--measure);
+  }
+
+  /* 상태 배지 */
+  .badge {
+    display: inline-block;
+    font-family: "JetBrains Mono", monospace;
+    font-size: .68rem;
+    padding: .08rem .4rem;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  .badge.ok { background: var(--accent-soft); color: var(--accent); }
+  .badge.warn { background: var(--approx-soft); color: var(--approx); }
+  .badge.bad { background: var(--risk-soft); color: var(--risk); }
+
+  footer {
+    margin-top: 4rem;
+    padding-top: 1.3rem;
+    border-top: 1px solid var(--rule);
+    font-size: .84rem;
+    color: var(--ink-faint);
+  }
+
+  footer p { max-width: var(--measure); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <p class="meta">
+    <span>starball_predictor.py</span>
+    <span>본체 1,500 LOC + 도구 6종</span>
+    <span>Python 3.12+</span>
+    <span>실측 기준 2026-08-31</span>
+  </p>
+
+  <h1>스타볼 예측 파이프라인</h1>
+  <p class="lede">
+    네이버 스포츠 비공개 API에서 KBO 경기 데이터를 모아, LG 트윈스 스타볼의
+    <strong>매치데이 미션 3개</strong>에 넣을 값을 산출하고 ntfy 푸시와 PWA로
+    전달하는 파이프라인. 경기가 끝나면 박스스코어로 채점해 기록에 쌓는다.
+    의존성은 <code>requests</code> · <code>pandas</code> 뿐이고 배포는 깃헙 액션 +
+    깃헙 페이지다. 아래는 설계 근거, 실측으로 확인한 함정, 그리고
+    <strong>모델이 기준선을 못 이겼다는 측정 결과</strong>다.
+  </p>
+
+  <section>
+    <p class="kind">구조</p>
+    <h2>파이프라인</h2>
+
+    <figure>
+      <div class="fig-scroll">
+        <svg class="diagram" viewBox="0 0 1040 430" role="img"
+             aria-label="네이버 API 4곳에서 build_context가 데이터를 모아 GameContext를 만들고, predict가 시뮬레이션 분포를 생성해 문항별 확률로 버킷 판정한 뒤 터미널과 ntfy 두 곳으로 나간다. 수집 단계는 외부 의존이라 깨질 수 있고, GameContext 이후는 순수 함수라 fixture로 재현 가능하다.">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <polygon points="0,1 10,5 0,9" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <!-- 경계 배경 -->
+          <rect x="2" y="26" width="344" height="268" rx="4"
+                fill="currentColor" opacity="0.035"/>
+          <rect x="2" y="26" width="344" height="268" rx="4"
+                fill="none" class="s-risk" stroke-width="1"
+                stroke-dasharray="4 3" opacity="0.65"/>
+          <text x="10" y="18" font-size="11.5" class="f-risk" font-weight="500">
+            외부 의존 — 스키마 변경으로 깨질 수 있음
+          </text>
+
+          <rect x="366" y="26" width="672" height="268" rx="4"
+                fill="currentColor" opacity="0.035"/>
+          <rect x="366" y="26" width="672" height="268" rx="4"
+                fill="none" class="s-accent" stroke-width="1" opacity="0.7"/>
+          <text x="374" y="18" font-size="11.5" class="f-accent" font-weight="500">
+            순수 함수 — 네트워크 없이 재현·백테스트 가능
+          </text>
+
+          <!-- 엔드포인트 4개 -->
+          <g font-size="11" font-family="monospace">
+            <rect x="14" y="48" width="172" height="38" rx="3" fill="none"
+                  stroke="currentColor" stroke-width="1"/>
+            <text x="24" y="65">/schedule/calendar</text>
+            <text x="24" y="79" font-size="9.5" opacity="0.6">일정 · gameId</text>
+
+            <rect x="14" y="96" width="172" height="38" rx="3" fill="none"
+                  stroke="currentColor" stroke-width="1"/>
+            <text x="24" y="113">/schedule/games/{id}</text>
+            <text x="24" y="127" font-size="9.5" opacity="0.6">구장 · 시각 · 스코어</text>
+
+            <rect x="14" y="144" width="172" height="38" rx="3" fill="none"
+                  stroke="currentColor" stroke-width="1.8"/>
+            <text x="24" y="161">…/{id}/preview</text>
+            <text x="24" y="175" font-size="9.5" opacity="0.6">선발 · 상대전적 · 최근5</text>
+
+            <rect x="14" y="192" width="172" height="38" rx="3" fill="none"
+                  stroke="currentColor" stroke-width="1"/>
+            <text x="24" y="209">/statistics/…/teams</text>
+            <text x="24" y="223" font-size="9.5" opacity="0.6">팀 63개 필드</text>
+
+            <rect x="14" y="240" width="172" height="38" rx="3" fill="none"
+                  stroke="currentColor" stroke-width="1" stroke-dasharray="3 2"/>
+            <text x="24" y="257">…/{id}/record</text>
+            <text x="24" y="271" font-size="9.5" opacity="0.6">박스스코어 · 팩터 계산용</text>
+          </g>
+
+          <!-- build_context -->
+          <rect x="212" y="120" width="126" height="86" rx="3"
+                fill="currentColor" opacity="0.07"/>
+          <rect x="212" y="120" width="126" height="86" rx="3" fill="none"
+                stroke="currentColor" stroke-width="1.4"/>
+          <text x="275" y="152" font-size="12" text-anchor="middle"
+                font-family="monospace">build_context()</text>
+          <text x="275" y="170" font-size="9.5" text-anchor="middle" opacity="0.65">
+            요청 23건 · 21초
+          </text>
+          <text x="275" y="185" font-size="9.5" text-anchor="middle" opacity="0.65">
+            30분 TTL 캐시
+          </text>
+
+          <!-- 수집 화살표 -->
+          <g stroke="currentColor" stroke-width="1" fill="none" marker-end="url(#ah)"
+             opacity="0.75">
+            <path d="M186,67 L200,67 L200,150 L210,150"/>
+            <path d="M186,115 L200,115 L200,150 L210,150"/>
+            <path d="M186,163 L210,163"/>
+            <path d="M186,211 L200,211 L200,176 L210,176"/>
+          </g>
+
+          <!-- GameContext -->
+          <rect x="396" y="128" width="122" height="70" rx="3" fill="none"
+                stroke="currentColor" stroke-width="1.4"/>
+          <text x="457" y="157" font-size="12" text-anchor="middle"
+                font-family="monospace">GameContext</text>
+          <text x="457" y="174" font-size="9.5" text-anchor="middle" opacity="0.65">
+            불변 데이터
+          </text>
+
+          <!-- predict -->
+          <rect x="570" y="128" width="126" height="70" rx="3"
+                fill="currentColor" opacity="0.07"/>
+          <rect x="570" y="128" width="126" height="70" rx="3" fill="none"
+                stroke="currentColor" stroke-width="1.4"/>
+          <text x="633" y="152" font-size="12" text-anchor="middle"
+                font-family="monospace">predict()</text>
+          <text x="633" y="168" font-size="9.5" text-anchor="middle" opacity="0.65">
+            log5 → 음이항
+          </text>
+          <text x="633" y="182" font-size="9.5" text-anchor="middle" opacity="0.65">
+            5만회 시뮬
+          </text>
+
+          <!-- picks -->
+          <rect x="748" y="128" width="126" height="70" rx="3" fill="none"
+                stroke="currentColor" stroke-width="1.4"/>
+          <text x="811" y="152" font-size="12" text-anchor="middle"
+                font-family="monospace">picks[]</text>
+          <text x="811" y="168" font-size="9.5" text-anchor="middle" opacity="0.65">
+            버킷 판정 결과
+          </text>
+          <text x="811" y="182" font-size="9.5" text-anchor="middle" opacity="0.65">
+            edge 포함
+          </text>
+
+          <!-- 싱크 -->
+          <g font-size="11">
+            <rect x="926" y="96" width="104" height="38" rx="3" fill="none"
+                  stroke="currentColor" stroke-width="1"/>
+            <text x="978" y="113" text-anchor="middle" font-family="monospace">render()</text>
+            <text x="978" y="126" font-size="9.5" text-anchor="middle" opacity="0.6">터미널</text>
+
+            <rect x="926" y="144" width="104" height="38" rx="3" fill="none"
+                  class="s-accent" stroke-width="1.6"/>
+            <text x="978" y="161" text-anchor="middle" font-family="monospace"
+                  class="f-accent">ntfy</text>
+            <text x="978" y="174" font-size="9.5" text-anchor="middle" class="f-accent">폰 알림</text>
+
+            <rect x="926" y="192" width="104" height="38" rx="3" fill="none"
+                  class="s-accent" stroke-width="1.6"/>
+            <text x="978" y="209" text-anchor="middle" font-family="monospace"
+                  class="f-accent">web/*.json</text>
+            <text x="978" y="222" font-size="9.5" text-anchor="middle" class="f-accent">PWA</text>
+          </g>
+
+          <!-- 단계 간 화살표 + 라벨 -->
+          <g stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#ah)">
+            <line x1="338" y1="163" x2="392" y2="163"/>
+            <line x1="518" y1="163" x2="566" y2="163"/>
+            <line x1="696" y1="163" x2="744" y2="163"/>
+            <path d="M874,163 L900,163 L900,115 L922,115"/>
+            <path d="M874,163 L900,163 L900,163 L922,163"/>
+            <path d="M874,163 L900,163 L900,211 L922,211"/>
+          </g>
+          <g font-size="9.5" text-anchor="middle" opacity="0.7">
+            <text x="365" y="156">축소 적용</text>
+            <text x="542" y="156">리그 평균</text>
+            <text x="720" y="156">sims 15종</text>
+          </g>
+
+          <!-- fixture 우회 -->
+          <rect x="396" y="318" width="300" height="40" rx="3" fill="none"
+                class="s-accent" stroke-width="1.2" stroke-dasharray="5 3"/>
+          <text x="546" y="336" font-size="11" text-anchor="middle"
+                font-family="monospace" class="f-accent">--fixture today.json</text>
+          <text x="546" y="350" font-size="9.5" text-anchor="middle" class="f-accent">
+            원본 응답 스냅샷 되감기 → 결정론적 재현
+          </text>
+          <path d="M457,318 L457,202" class="s-accent" stroke-width="1.2"
+                stroke-dasharray="5 3" fill="none" marker-end="url(#ah)"/>
+
+          <!-- 정산 되먹임 -->
+          <rect x="748" y="318" width="282" height="40" rx="3" fill="none"
+                class="s-accent" stroke-width="1.2"/>
+          <text x="889" y="336" font-size="11" text-anchor="middle"
+                font-family="monospace" class="f-accent">webdata.py settle</text>
+          <text x="889" y="350" font-size="9.5" text-anchor="middle" class="f-accent">
+            경기 후 박스스코어로 채점 → 기록 누적
+          </text>
+          <path d="M889,318 L889,236" class="s-accent" stroke-width="1.2"
+                fill="none" marker-end="url(#ah)"/>
+
+          <!-- 하단 주석 -->
+          <text x="14" y="378" font-size="10.5" opacity="0.75">
+            수집이 깨져도 fixture 경로로 모델·출력은 항상 동작한다. --probe 가 어느 엔드포인트가
+            죽었는지 짚어준다.
+          </text>
+          <text x="14" y="400" font-size="10.5" opacity="0.75">
+            굵은 테두리 = preview 엔드포인트. 선발 상대 성적까지 한 번에 주는 핵심 소스라
+            여기가 죽으면 예측 자체가 불가능하다.
+          </text>
+        </svg>
+      </div>
+      <figcaption>
+        설계의 핵심은 점선 경계다. 문서화되지 않은 외부 API에 의존하는 구간을
+        <code>build_context()</code> 안으로 몰아넣고, 그 산출물인 <code>GameContext</code>부터는
+        순수 데이터로 유지했다. 그래서 스키마가 바뀌어도 모델과 출력은 fixture로 계속
+        검증할 수 있고, 과거 경기 백테스트도 같은 경로를 쓴다.
+      </figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <p class="kind">계약</p>
+    <h2>데이터 소스</h2>
+    <p>
+      공개 문서가 없는 내부 엔드포인트다. 아래는 2026-08-27에 직접 호출해 확인한
+      동작이며, 예고 없이 바뀔 수 있다.
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>엔드포인트</th><th>얻는 것</th><th>상태</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">/schedule/calendar</td>
+            <td>월 단위 일정, <code>gameId</code>, 홈·원정 코드, statusCode</td>
+            <td class="nowrap"><span class="badge ok">확인</span></td>
+          </tr>
+          <tr>
+            <td class="mono">/schedule/games/{id}</td>
+            <td>구장, 개시 시각, 스코어, 팀 코드</td>
+            <td class="nowrap"><span class="badge ok">확인</span></td>
+          </tr>
+          <tr>
+            <td class="mono">/schedule/games/{id}/preview</td>
+            <td>
+              선발 예고, <code>currentSeasonStats</code>,
+              <strong><code>currentSeasonStatsOnOpponents</code></strong>(상대팀 한정 ERA·이닝),
+              <code>seasonVsResult</code>, 최근 5경기, 구종
+            </td>
+            <td class="nowrap"><span class="badge ok">확인</span></td>
+          </tr>
+          <tr>
+            <td class="mono">/statistics/categories/kbo/seasons/{y}/teams</td>
+            <td>팀별 63개 필드 — 순위, 득실점, ERA, WHIP, HR, 안타, 삼진</td>
+            <td class="nowrap"><span class="badge ok">확인</span></td>
+          </tr>
+          <tr>
+            <td class="mono">/schedule/games/{id}/record</td>
+            <td><code>teamPitchingBoxscore</code> — 경기별 피홈런. 구장 팩터 계산에만 사용</td>
+            <td class="nowrap"><span class="badge ok">확인</span></td>
+          </tr>
+          <tr>
+            <td class="mono">/schedule/games?fromDate=&amp;toDate=</td>
+            <td>200을 주지만 <strong>항상 빈 배열</strong>. 쓰지 않음</td>
+            <td class="nowrap"><span class="badge bad">함정</span></td>
+          </tr>
+          <tr>
+            <td class="mono">/sports/player/{pCode}/…</td>
+            <td>4가지 경로 시도 전부 404. 투수 경기별 로그를 못 얻음</td>
+            <td class="nowrap"><span class="badge bad">불가</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      가장 값진 발견은 <code>preview</code>다. 보통 가장 구하기 어려운
+      <em>선발 투수의 특정 팀 상대 성적</em>을 그냥 준다. KBO 공식이나 스탯티즈를
+      크롤링할 필요가 없었다.
+    </p>
+
+    <h3>실측으로 걸러낸 함정</h3>
+
+    <div class="box risk">
+      <span class="box-label">함정 1 · yearMonth 파라미터가 무시된다</span>
+      <p>
+        <code>calendar?yearMonth=2026-09</code> 는 200과 함께 <strong>8월 데이터</strong>를
+        돌려준다. 실제로 월을 고르는 건 <code>date=</code> 다. 둘 다 넘겨야 맞다.
+      </p>
+      <p>
+        조용히 틀린 답을 주는 종류라 파급이 컸다. 9월 이후 스케줄 실행이 전부
+        &ldquo;경기 없음&rdquo;이 되고, 3~8월을 훑는 상대전적 집계가 8월치를 6번
+        중복 계산하고 있었다. 평균값은 중복에 불변이라 겉으로 티가 안 났고,
+        축소에 쓰는 표본 크기만 부풀려져 있었다.
+      </p>
+      <p>
+        현재는 <code>date=</code>를 함께 넘기고, 응답이 요청한 달이 아니면 빈 리스트를
+        반환해 실패를 드러낸다.
+      </p>
+    </div>
+
+    <div class="box risk">
+      <span class="box-label">함정 2 · seasonVsResult 의 집계 범위가 다르다</span>
+      <p>
+        <code>preview.seasonVsResult</code>는 LG-NC 7승 5패(12경기)를 주는데, 일정에서
+        모은 실제 맞대결은 14경기였다. 대조해보니 <strong>3월 2경기를 빼고 센다.</strong>
+        승패는 이 필드에서, 득실점은 직접 모은 14경기에서 뽑고 있었으니 화면의
+        &ldquo;상대전적&rdquo;과 득실점 평균이 서로 다른 경기 묶음이었다.
+      </p>
+      <p>현재는 승패까지 직접 모은 표본에서 다시 센다. 단일 출처 원칙.</p>
+    </div>
+
+    <div class="box risk">
+      <span class="box-label">함정 3 · KBO 이닝 표기</span>
+      <p>
+        <code>inn: "34.2"</code>는 34.2이닝이 아니라 <strong>34와 2/3이닝</strong>이다.
+        <code>"108 1/3"</code> 형태도 섞여 온다. 이걸 float로 그냥 읽으면 ERA·WHIP·
+        피홈런율이 통째로 어긋난다. <code>parse_kbo_innings()</code>로 분리하고
+        9케이스 단위테스트를 붙였다.
+      </p>
+    </div>
+
+    <div class="box approx">
+      <span class="box-label">함정 4 · 볼넷 필드가 전 구단 null</span>
+      <p>
+        <code>offenseBb</code> / <code>defenseBb</code>는 10개 팀 모두 null로 내려온다.
+        볼넷 관련 문항이 필요하면 <code>offenseBbhp</code>(볼넷+사구)로 대체해야 한다.
+        HR·안타·삼진 필드는 결측 없이 깨끗하다.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kind">수식</p>
+    <h2>모델</h2>
+
+    <h3>기대 산출 — 오즈비(log5)</h3>
+    <p>
+      단순 산술평균 대신 리그 평균 대비 비율의 곱을 쓴다. 극단값에서 안정적이다.
+      득점과 카운팅 스탯(홈런·안타·삼진)이 같은 형태를 공유한다.
+    </p>
+    <div class="code">
+      <div class="code-name">predict() · expected_runs / expected_count</div>
+<pre><span class="c"># 공격력과 상대 실점력을 리그 평균으로 정규화해 곱한다</span>
+exp = league_avg × (off_rate / league_avg) × (def_rate / league_avg)
+
+<span class="c"># 실점력은 선발의 예상 소화 이닝만큼만 선발 몫으로 잡는다</span>
+share    = starter.expected_ip / 9
+def_rate = share × starter_ra9 + (1 − share) × bullpen_ra9
+
+<span class="c"># 홈팀 가산 (KBO 홈 승률 ≈ .535)</span>
+<span class="k">HOME_FIELD_RUNS</span> = 0.15</pre>
+    </div>
+
+    <h3>축소 — 이 모델의 중심</h3>
+    <p>
+      작은 표본을 액면가로 믿으면 전부 망가진다. 오늘 예시만 봐도 LG 선발의
+      NC전 성적이 <em>2이닝 ERA 9.00</em>이었다. 모든 상대 한정 지표에 축소를 건다.
+    </p>
+    <div class="code">
+      <div class="code-name">shrink(observed, prior, n, k)</div>
+<pre>shrink = (observed × n + prior × k) / (n + k)
+<span class="c"># n == k 이면 정확히 반반. n 이 작을수록 prior(리그평균)에 붙는다.</span></pre>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>대상</th><th class="mono">k</th><th>근거</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>투수 상대팀 ERA</td><td class="mono">25 IP</td>
+            <td>2이닝 9.00 → 4.83 / 200이닝 9.00 → 8.50</td>
+          </tr>
+          <tr>
+            <td>팀 상대 득점</td><td class="mono">20 G</td><td>맞대결 표본이 통상 10~16경기</td>
+          </tr>
+          <tr>
+            <td>투수 피홈런율</td><td class="mono">50 IP</td>
+            <td>ERA보다 훨씬 늦게 안정된다</td>
+          </tr>
+          <tr>
+            <td>최근 5경기</td><td class="mono">8 G</td><td>최근 페이스 과대반영 방지</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>구간 확률 — 음이항 몬테카를로</h3>
+    <p>
+      점수차·실점 구간을 점추정에서 눈대중으로 나누면 틀린다. 팀별 분포를
+      음이항으로 5만 회 시뮬레이션해 구간 확률을 직접 센다. 야구 득점은 포아송보다
+      과산포이므로 <code>var = μ + μ²/φ</code>로 맞춘다.
+    </p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>분포</th><th class="mono">φ</th><th>비고</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>팀 득점</td><td class="mono">4.0</td><td>μ≈4.9에서 sd≈3.2 — KBO 실측과 부합</td></tr>
+          <tr><td>선발 자책점</td><td class="mono">3.0</td><td></td></tr>
+          <tr><td>홈런</td><td class="mono">3.5</td><td></td></tr>
+          <tr><td>안타</td><td class="mono">20.0</td><td></td></tr>
+          <tr><td>삼진</td><td class="mono">25.0</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      무승부는 KBO 규정(12회 종료)을 반영해, 9회 동점 시뮬레이션 중
+      <code>DRAW_SHARE = 0.35</code>만 무승부로 남기고 나머지는 연장에서 50:50으로
+      가른다. 결과 무승부율이 3~4%로 실제와 맞는다.
+    </p>
+
+    <h3>구장 홈런 팩터</h3>
+    <p>
+      2026시즌 완료 626경기의 박스스코어에서 <code>teamPitchingBoxscore.hr</code>를 모아
+      팀별 <code>홈경기 홈런율 ÷ 원정경기 홈런율</code>로 계산했다. 같은 팀이 분자·분모
+      양쪽에 들어가 팀 타력이 상쇄된다.
+    </p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>구장</th><th class="mono">실측</th><th class="mono">적용</th>
+            <th class="mono">경기당 HR</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>창원</td><td class="mono">1.421</td><td class="mono">1.211</td><td class="mono">2.32</td></tr>
+          <tr><td>대구</td><td class="mono">1.324</td><td class="mono">1.162</td><td class="mono">2.30</td></tr>
+          <tr><td>문학</td><td class="mono">1.283</td><td class="mono">1.141</td><td class="mono">2.52</td></tr>
+          <tr><td>광주</td><td class="mono">1.078</td><td class="mono">1.039</td><td class="mono">2.38</td></tr>
+          <tr><td>대전</td><td class="mono">0.861</td><td class="mono">0.930</td><td class="mono">2.06</td></tr>
+          <tr><td>고척</td><td class="mono">0.837</td><td class="mono">0.918</td><td class="mono">1.56</td></tr>
+          <tr><td>사직</td><td class="mono">0.781</td><td class="mono">0.891</td><td class="mono">1.53</td></tr>
+          <tr><td>수원</td><td class="mono">0.749</td><td class="mono">0.875</td><td class="mono">1.40</td></tr>
+          <tr><td>잠실</td><td class="mono">0.665</td><td class="mono">0.833</td><td class="mono">1.39</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="box approx">
+      <span class="box-label">실측값을 그대로 쓰지 않는 이유</span>
+      <p>
+        <code>PARK_FACTOR_REGRESSION = 0.5</code>으로 1.0 쪽으로 절반 당겨서 쓴다.
+        구장당 홈경기가 60여 경기뿐인 노이즈도 있지만, 더 중요한 건
+        <strong>홈/원정 대비법의 구조적 편향</strong>이다. 어떤 팀의 &lsquo;원정&rsquo;에는
+        자기 홈구장이 빠지므로 비교 기준이 그 구장을 제외한 평균이 된다. 결과적으로
+        모든 구장의 팩터가 1.0에서 실제보다 멀어지는 방향으로 부풀려진다.
+      </p>
+      <p>
+        측정 원값은 <code>park_factors.json</code>에 보존하고 축소는 코드에서 한다 —
+        측정과 모델링 판단을 섞지 않는다. 0.5는 한 시즌 표본에 통용되는 보수적 값이며
+        유도된 상수는 아니다. 여러 시즌을 모으면 올려야 한다.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kind">핵심</p>
+    <h2>미션 3개와 조합 최적화</h2>
+    <p>
+      스타볼은 앱 화면 실측 기준 미션이 <strong>3개</strong>이고 전부 LG 기준이다.
+      처음에는 문항을 9개로 추정해 만들었는데, 실제 화면을 보고 6개를 들어냈다.
+    </p>
+    <div class="code">
+      <div class="code-name">2026-08-28 앱 화면 실측</div>
+<pre>MISSION 1  승패 맞히기        승 / 무 / 패
+MISSION 2  득실 차 맞히기      드롭다운 <span class="c"># 선택지 미확인, 추정값 사용 중</span>
+MISSION 3  홈런 수 맞히기      드롭다운 <span class="c"># LG 트윈스 홈런 개수 기준</span></pre>
+    </div>
+
+    <div class="box risk">
+      <span class="box-label">&ldquo;미션을 모두 달성&rdquo; — 이 한 줄이 설계를 바꾼다</span>
+      <p>
+        스타볼은 세 미션을 <strong>전부</strong> 맞혀야 1개 지급된다. 그래서 문항별
+        1위를 따로 고르면 안 된다 — 득실 차와 홈런 수는 서로 상관되기 때문이다
+        (대승이면 홈런도 잘 나온다). 조합 단위로 동시 적중 확률을 최대화해야 한다.
+      </p>
+      <p>
+        시뮬레이션마다 세 문항의 라벨을 붙이고, 조합별로 동시에 맞는 비율을 세어
+        최대인 조합을 고른다. 실측 효과는 크다 —
+        <strong>그리디 10.47% vs 조합 최적화 13.03%</strong>.
+      </p>
+    </div>
+
+    <h3>득점과 홈런은 독립이 아니다</h3>
+    <p>
+      조합 확률이 맞으려면 시뮬레이션 안에서 상관이 재현돼야 한다. 1,138 팀-경기로
+      실측한 결과, 처음 모델은 두 군데가 틀려 있었다.
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>스탯</th><th class="mono">득점 상관</th><th class="mono">φ 실측</th><th class="mono">φ 종전</th></tr></thead>
+        <tbody>
+          <tr><td>홈런</td><td class="mono">+0.470</td><td class="mono">9.33</td><td class="mono">3.5</td></tr>
+          <tr><td>안타</td><td class="mono">+0.755</td><td class="mono">34.96</td><td class="mono">20.0</td></tr>
+          <tr><td>삼진</td><td class="mono">+0.038</td><td class="mono">과소산포</td><td class="mono">25.0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      득점과 홈런을 <em>독립으로 뽑고 있었고</em>, 홈런 과산포도 크게 틀렸다.
+      득점을 조건으로 걸면 홈런은 거의 포아송이다 — 종전 φ=3.5 는 사실
+      득점 상관을 과산포로 잘못 흡수한 값이었다. 이제 그 팀의 득점 시뮬레이션에
+      묶어서 뽑는다(<code>beta</code>는 수치 보정으로 적합).
+    </p>
+
+    <h3>문항 정의는 코드 밖에 있다</h3>
+    <p>
+      드롭다운 실제 선택지를 아직 못 봤고, 이벤트마다 바뀔 수도 있다. 그래서
+      문항을 <code>starball_questions.json</code> 으로 뺐다 — 파이썬을 못 만져도
+      갱신할 수 있다. 라벨이 기저 분포와 어긋나면 로드 시점에 경고하고 혼합을 끈다
+      (조용히 무력화되던 버그가 실제로 있었다).
+    </p>
+  </section>
+
+  <section>
+    <p class="kind">운영</p>
+    <h2>배포</h2>
+    <p>
+      깃헙 액션 크론. <code>cron: '0 1 * * *'</code> = 01:00 UTC = 10:00 KST.
+      캐시 없는 신규 러너에서 <strong>21초 · 요청 23건</strong>으로 완료된다.
+    </p>
+
+    <div class="box risk">
+      <span class="box-label">러너는 UTC다</span>
+      <p>
+        <code>date.today()</code>를 쓰면 러너 로컬 날짜가 나온다. 한국시간 오전 9시
+        이전에 실행되면 <strong>어제 날짜로 경기를 찾는다.</strong> 크론이 5~30분씩
+        밀리는 걸 감안하면 언제든 터질 수 있었다. <code>today_kst()</code>로 고정했고,
+        한국은 1988년 이후 서머타임이 없어 고정 +9 오프셋이 항상 정확하다
+        (<code>zoneinfo</code>는 윈도우에서 <code>tzdata</code>를 요구하므로 피했다).
+      </p>
+    </div>
+
+    <h3>종료 코드 계약</h3>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th class="mono">코드</th><th>의미</th><th>워크플로 처리</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">0</td>
+            <td>예측 발송 완료 / 원정 경기(<code>--home-only</code>) / 경기 없는 날</td>
+            <td>초록</td>
+          </tr>
+          <tr>
+            <td class="mono">75</td>
+            <td>선발 예고 전 — <code>NotReady</code></td>
+            <td>초록 + <code>::notice::</code></td>
+          </tr>
+          <tr>
+            <td class="mono">1</td>
+            <td>수집 실패 또는 푸시 실패</td>
+            <td>빨강 + <code>::error::</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      비게임일에 빨간 X가 뜨면 사용자가 고장으로 오해하고 결국 알림을 무시하게 된다.
+      그래서 <code>NoGame</code>/<code>NotReady</code>를 예외로 분리해 정상 종료로 흘린다.
+    </p>
+
+    <h3>ntfy 발행</h3>
+    <p>
+      헤더 대신 <strong>JSON 본문</strong>으로 발행한다. HTTP 헤더는 latin-1이라 한글
+      제목을 RFC 2047로 인코딩해야 하는데, 값이 길면 인코딩 결과가 줄바꿈되면서
+      <code>requests</code>가 거부한다(액션 라벨에서 실제로 터졌다). JSON은 그 문제가 없고
+      액션 버튼도 자연스럽게 실린다.
+    </p>
+
+    <h3>정산 — 실사용 성적 추적</h3>
+    <p>
+      예측만 하고 결과를 안 보면 실제로 맞았는지 영영 모른다. 백테스트 수치는
+      과거 재현이지 실사용 성적이 아니다. <code>webdata.py settle</code> 이 끝난 경기의
+      박스스코어를 받아 채점하고 기록에 남긴다. 채점 규칙은
+      <code>backtest.py</code> 의 것을 그대로 재사용한다 — 같은 규칙을 두 곳에 두면
+      반드시 어긋난다.
+    </p>
+    <div class="box approx">
+      <span class="box-label">재현과 실사용을 섞지 않는다</span>
+      <p>
+        시연용으로 지난 경기를 시점 고정 재현해 채워둘 수 있는데
+        (<code>webdata.py backfill</code>), 기록에는 <code>replayed</code> 표시가 붙고
+        화면에도 &ldquo;몇 경기가 재현이고 몇 경기가 실사용인지&rdquo; 나눠서 나온다.
+        섞어서 &lsquo;N경기 성적&rsquo;이라고 하면 거짓말이 된다.
+      </p>
+      <p>
+        재현을 <code>build_context</code> 로 하면 안 된다 — 과거 날짜에 오늘 시점
+        팀 성적이 들어가 미래를 훔쳐보고, 모든 경기가 똑같은 답이 나온다.
+        백테스트와 같은 누적 상태를 써야 한다.
+      </p>
+    </div>
+
+    <h3>PWA — 서버 없는 웹앱</h3>
+    <p>
+      깃헙 액션이 <code>web/today.json</code> 과 <code>web/history.json</code> 을 저장소에
+      커밋하고, 깃헙 페이지가 <code>web/</code> 을 그대로 서빙한다. 정적 HTML 하나가
+      그 둘을 읽어 화면 3개(오늘·근거·기록)를 그린다. <strong>서버도 빌드 도구도
+      프레임워크도 없다.</strong>
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>파일</th><th>역할</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">web/index.html</td><td>화면 전부(21KB, 의존성 0)</td></tr>
+          <tr><td class="mono">web/sw.js</td><td>홈화면 실행용 서비스워커.
+              <strong>예측 데이터는 캐시하지 않는다</strong> — 캐시하면 어제 값을 보여준다</td></tr>
+          <tr><td class="mono">web/manifest.webmanifest</td><td>홈화면 추가 정보</td></tr>
+          <tr><td class="mono">web/*.json</td><td>액션이 매일 덮어쓴다</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="box risk">
+      <span class="box-label">깃헙 페이지는 공개 저장소에서만 무료다</span>
+      <p>
+        그래서 저장소를 공개로 두어야 하는데, 그러면 코드에 박힌 기본 ntfy 토픽이
+        노출된다. 토픽은 이름만 알면 <strong>남이 발행도 할 수 있으므로</strong>,
+        워크플로가 <code>NTFY_TOPIC</code> Secret 이 없으면 아예 실패하도록 막았다.
+        기본 토픽으로 조용히 발송되는 일은 없다.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kind">검증</p>
+    <h2>백테스트 결과</h2>
+    <p>
+      <code>build_gamelog.py</code> 로 2026시즌 576경기 박스스코어를 받아,
+      <code>backtest.py</code> 가 시점을 고정해 재현한다. D일 경기를 예측할 때
+      <strong>D일 이전 경기만</strong> 누적해 팀·투수 성적을 만든다. 워밍업 20경기
+      이후인 468경기가 측정 대상이다.
+    </p>
+
+    <div class="box risk">
+      <span class="box-label">유일하게 의미 있는 지표는 &lsquo;전부 적중&rsquo;이다</span>
+      <p>
+        스타볼은 세 미션을 모두 맞혀야 1개 지급된다. 문항별 적중률은 참고치일 뿐,
+        실제로 세어야 하는 건 조합이 통째로 맞은 비율이다.
+      </p>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>방식</th><th class="mono">전부 적중</th><th>비고</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>조합 최적화 (현재)</strong></td>
+            <td class="mono"><strong>13.03%</strong></td>
+            <td>세 문항 동시 적중을 최대화</td>
+          </tr>
+          <tr><td>문항별 1위 따로 고르기</td><td class="mono">10.47%</td>
+              <td>상관을 무시한 그리디</td></tr>
+          <tr><td>고정 최빈 조합 (기준선)</td><td class="mono">12.82%</td>
+              <td><code>패 / 4점 이상 / 0개</code> 를 매번</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      <strong>모델은 기준선을 통계적으로 이기지 못했다.</strong> 13.03% vs 12.82%
+      는 468경기에서 1경기 차이이고 표준오차는 ±1.55%p 다. 조합 최적화가
+      그리디를 크게 이기는 것(+2.56%p)은 분명하지만, 그건 &lsquo;모델 내부에서
+      상관을 제대로 다뤘다&rsquo;는 뜻이지 &lsquo;기저보다 낫다&rsquo;는 뜻이 아니다.
+    </p>
+
+    <h3>기저 분포와 섞는다</h3>
+    <p>
+      모델 원본을 그대로 쓰면 오히려 손해였다(12.21%). 근거 없이 기저에서
+      벗어나기 때문이다. 그래서 리그 기저 분포와 섞어서 쓴다.
+    </p>
+    <div class="code">
+      <div class="code-name">BASE_RATE_BLEND — 정확도와 다양성의 맞바꿈</div>
+<pre>  α    서로 다른 조합  최빈 비중   전부 적중
+ 1.0        5개       66%     12.21%
+ <span class="k">0.7        4개       80%     12.21%   ← 채택</span>
+ 0.5        4개       92%     12.42%
+ 0.3        2개      100%     12.63%
+ 0.0        1개      100%     12.63%</pre>
+    </div>
+    <p>
+      적중률 차이는 전부 표준오차 안이다 — 468경기에서 2경기 차이라 통계적으로
+      구별되지 않는다. 그래서 이 값은 정확도가 아니라 <em>제품 판단</em>으로 골랐다.
+      α 가 낮으면 출력이 사실상 상수가 되어(92~100% 동일) 도구를 열 이유가 없어진다.
+      0.7 이면 5경기 중 1번은 다른 답이 나오면서 측정 가능한 손해는 없다.
+    </p>
+
+    <h3>과신 교정</h3>
+    <p>
+      모델이 65%라고 말한 예측이 실제로는 52.1%만 맞았다. 시뮬레이션이 입력
+      추정치를 확실한 값으로 취급해서 추정 자체의 불확실성이 빠진 탓이다.
+      브라이어 최소화로 적합한 <code>PROB_CALIBRATION = 0.76</code> 을 적용해
+      60~69% 구간 오차를 <strong>−12.9%p → −1.5%p</strong> 로 잡았다. 다만 보정은
+      순위를 바꾸지 않으므로 적중률은 그대로다 — 확률값을 믿을 수 있게 만들 뿐이다.
+    </p>
+
+    <div class="box approx">
+      <span class="box-label">백테스트의 한계</span>
+      <p>
+        미션 2·3 의 드롭다운 실제 선택지를 아직 못 봤다. 위 수치는 전부
+        <strong>추정한 구간</strong> 위에서 잰 값이라, 실제 선택지가 다르면
+        다시 재야 한다(<code>build_base_rates.py</code> 와 <code>backtest.py</code>
+        를 다시 돌리면 된다). 구장 팩터는 시즌 전체로 계산해 시즌 중반 예측에
+        약간 유출된다.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kind">한계</p>
+    <h2>남은 약점</h2>
+    <p>리뷰에서 당연히 지적될 것들을 먼저 적는다.</p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>항목</th><th>상태</th><th>내용</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>백테스트</td>
+            <td class="nowrap"><span class="badge ok">완료</span></td>
+            <td>
+              2026시즌 529경기 시점고정 검증 완료. 결과는 아래 &ldquo;검증&rdquo;
+              절에 있으며, 대부분의 문항에서 모델이 기준선을 못 넘겼다.
+            </td>
+          </tr>
+          <tr>
+            <td>투수 최근 5등판</td>
+            <td class="nowrap"><span class="badge ok">구현</span></td>
+            <td>
+              선수 기록 엔드포인트는 여전히 404지만, 경기별 박스스코어의
+              <code>pitchersBoxscore</code>를 <code>pcode</code>로 역추적해 복원한다.
+              선발은 5경기에 한 번 나오므로 팀 경기 25경기쯤을 훑는다.
+            </td>
+          </tr>
+          <tr>
+            <td>불펜 실점률</td>
+            <td class="nowrap"><span class="badge warn">근사</span></td>
+            <td>
+              전용 집계가 없어 팀 경기당 실점을 그대로 쓴다. 선발 몫을 덜어내지
+              않으므로 강한 선발을 가진 팀의 불펜을 과대평가한다.
+            </td>
+          </tr>
+          <tr>
+            <td>φ 값</td>
+            <td class="nowrap"><span class="badge warn">근사</span></td>
+            <td>KBO 경기당 분산에 대략 맞춘 값. 실제 분포로 적합하지 않았다.</td>
+          </tr>
+          <tr>
+            <td>선발 예상 이닝</td>
+            <td class="nowrap"><span class="badge warn">근사</span></td>
+            <td>
+              등판당 평균 이닝을 [3.0, 6.5]로 클램프. 불펜형 임시 선발을 감지해
+              경고하고 신뢰도를 낮추지만, 이닝 자체는 추정에 머문다.
+            </td>
+          </tr>
+          <tr>
+            <td>구장 팩터</td>
+            <td class="nowrap"><span class="badge warn">1시즌</span></td>
+            <td>단일 시즌 + 홈/원정 대비법의 구조적 편향. 축소로 완화만 했다.</td>
+          </tr>
+          <tr>
+            <td>미션 2·3 선택지</td>
+            <td class="nowrap"><span class="badge bad">미확인</span></td>
+            <td>
+              앱 화면에서 문항 이름은 확인했지만 드롭다운을 열어보지 못했다.
+              득실 차·홈런 수의 구간이 <strong>추정</strong>이라, 실제와 다르면
+              기저 분포와 백테스트 수치가 전부 바뀐다. 가장 먼저 확인할 것.
+            </td>
+          </tr>
+          <tr>
+            <td>실사용 기록</td>
+            <td class="nowrap"><span class="badge warn">0경기</span></td>
+            <td>
+              정산 파이프라인은 붙었지만 아직 실제로 운영한 날이 없다.
+              현재 기록은 전부 시점 고정 재현분이다.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="box">
+      <span class="box-label">의도적으로 넣지 않은 것</span>
+      <p>
+        자동 제출(Playwright)은 구현했다가 제거했다. 기술적으로는 쉽다 — 사이트에
+        전용 봇 탐지나 캡차가 없고, NetFUNNEL 가상 대기열은 실제 브라우저면 정상
+        통과한다. 넣지 않은 이유는 경품 이벤트 약관이다. 예측은 자동으로 받고
+        입력은 사람이 하는 현재 구조가 실익 대비 리스크가 가장 낮다고 판단했다.
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      데이터 출처는 네이버 스포츠 비공개 API이며 공식 지원이 없다. 폴라이트 딜레이
+      0.4초와 30분 TTL 캐시를 적용해 요청량을 하루 20여 건으로 유지한다.
+      예측은 확률 산출물이고 결과를 보장하지 않는다.
+    </p>
+  </footer>
+
+</div>
+</body>
+</html>
