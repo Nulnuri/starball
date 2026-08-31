@@ -13,8 +13,12 @@ MISSION 3  홈런 수 맞히기      0 ~ 10  (LG 기준)
 
 ## 쓰는 법
 
+**https://starball-9oj.pages.dev/** ← 폰에서 열고 홈 화면에 추가하세요.
+
+- **웹앱** — 위 주소. 오늘 추천 / 근거 / 지난 기록 세 화면입니다.
 - **알림** — ntfy 앱에서 토픽을 구독하면 아침에 한 번, 경기 2시간 전에 한 번
-- **웹앱** — `docs/` 안내서를 따라 배포하면 홈 화면에 추가해서 씁니다
+- **거울 주소** — <https://nulnuri.github.io/starball/> (같은 내용. Cloudflare 가 죽었을 때의 예비)
+- **직접 돌려보기** — `docs/` 안내서 (https://starball-9oj.pages.dev/docs/)
 
 설치는 [설치 안내](web/docs/setup.html), 내부 구조는
 [구조 문서](web/docs/architecture.html)를 보세요.
