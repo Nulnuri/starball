@@ -33,7 +33,7 @@ self.addEventListener("fetch", e => {
     const here = url.pathname.replace(/index\.html$/, "");
     if (here !== root) return;                    // 문서 등은 그냥 네트워크
     e.respondWith((async () => {
-      const shell = await caches.match("./");
+      const shell = await caches.match(new URL("./", location).href);
       if (shell && !shell.redirected) return shell;
       try {
         return await fetch(e.request);
