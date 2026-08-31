@@ -94,6 +94,18 @@
   .note { display: flex; gap: 7px; align-items: flex-start;
           background: #2A1D12; border-left: 2px solid var(--warn);
           padding: 9px 11px; border-radius: 0 3px 3px 0; color: var(--warn); }
+  /* 알림 칸. nav 바로 위에 붙어 탭을 바꿔도 자리가 안 흔들린다. */
+  #notif:empty { display: none; }
+  .notif { display: flex; align-items: center; gap: 10px; justify-content: space-between;
+           padding: 10px 20px; border-top: 1px solid var(--surface-2);
+           background: var(--surface); }
+  .notif.on { color: var(--ok); }
+  .notif .btn { flex: 0 0 auto; padding: 7px 13px; min-height: 34px; }
+  .linky { background: none; border: 0; color: var(--ink-dim); font: inherit;
+           text-decoration: underline; cursor: pointer; padding: 6px 2px;
+           min-height: 34px; flex: 0 0 auto; }
+  .notif a { color: var(--accent); }
+
   .hidden { display: none !important; }
   svg { flex: 0 0 auto; }
 </style>
@@ -101,6 +113,8 @@
 <body>
 <div id="app">
   <main id="view"><p class="muted small">불러오는 중…</p></main>
+  <section id="notif"></section>
+
   <nav>
     <button data-tab="today" aria-current="page">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/></svg>오늘</button>
@@ -434,7 +448,137 @@ document.querySelectorAll("nav button").forEach(b =>
   b.addEventListener("click", () => { tab = b.dataset.tab; render(); }));
 document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
 load();
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+/* ── 알림 ─────────────────────────────────────────────────
+   안드로이드 크롬은 홈 화면 추가 없이 바로 된다.
+   아이폰은 애플이 '홈 화면에 추가된 웹앱'에만 알림을 허용한다 —
+   사파리 탭에서는 PushManager 자체가 없어서 버튼을 띄울 수가 없다.
+   그 경우 버튼 대신 캘린더 구독을 안내한다.                        */
+const VAPID = "BONURGysUpCKz68_RBcEh-EAsrvC7pWOPh9NhRZImNJA1s5Y8VXuRI679fCzlOExsp7XTHwbTsisBwmMFaGMEEQ";
+const notifBox = document.getElementById("notif");
+let pushOK = null;   // /api/health 결과. null 이면 아직 모른다.
+
+function isiOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+         (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+}
+function installed() {
+  return window.navigator.standalone === true ||
+         window.matchMedia("(display-mode: standalone)").matches;
+}
+function canPush() {
+  return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+}
+function b64ToBytes(b64) {
+  const pad = "=".repeat((4 - (b64.length % 4)) % 4);
+  const raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from(raw, c => c.charCodeAt(0));
+}
+
+// 캘린더는 webcal:// 로 열어야 '구독'이 된다. https 로 열면 그 순간의 일정을
+// 한 번 복사하고 끝나서, 경기가 취소되거나 시간이 바뀌어도 반영되지 않는다.
+function calLink() {
+  const dir = location.pathname.replace(/[^/]*$/, "");
+  return "webcal://" + location.host + dir + "starball.ics";
+}
+const calHtml = () => `<a href="${calLink()}">캘린더로 받기</a>`;
+
+async function renderNotif() {
+  if (pushOK === null) {
+    try {
+      const r = await fetch("api/health", { cache: "no-store" });
+      pushOK = r.ok ? (await r.json()).kv === true : false;
+    } catch { pushOK = false; }
+  }
+
+  // 아이폰은 애플 정책상 홈 화면에 추가된 웹앱에만 알림이 허용된다.
+  // 사파리 탭에서는 PushManager 자체가 없어 켤 방법이 없다.
+  if (isiOS() && !installed()) {
+    notifBox.innerHTML = card("알림으로 받으시려면",
+      `사파리 아래 <b>공유</b> → <b>홈 화면에 추가</b> 후 아이콘으로 열어주세요.
+       그게 번거로우시면 ${calHtml()} — 경기 2시간 전에 기본 캘린더가 알려줍니다.`);
+    return;
+  }
+  if (!pushOK || !canPush()) {
+    notifBox.innerHTML = card("경기일 알림 받기",
+      `${calHtml()} 를 누르면 남은 경기가 캘린더에 들어가고,
+       경기 2시간 전에 알림이 뜹니다.`);
+    return;
+  }
+  if (Notification.permission === "denied") {
+    notifBox.innerHTML = card("알림이 차단되어 있어요",
+      `브라우저 설정에서 이 사이트의 알림을 허용해 주세요. 또는 ${calHtml()}.`);
+    return;
+  }
+  const sub = await currentSub();
+  if (sub) {
+    notifBox.innerHTML = `<div class="notif on"><span class="tiny">
+      경기일 아침과 마감 2시간 전에 알림이 갑니다</span>
+      <button class="linky tiny" id="notifOff">끄기</button></div>`;
+    document.getElementById("notifOff").onclick = () => turnOff(sub);
+    return;
+  }
+  notifBox.innerHTML = `<div class="notif"><span class="tiny">
+    경기일에 추천값을 알림으로 받으시겠어요?<br>
+    <span class="muted">또는 ${calHtml()}</span></span>
+    <button class="btn tiny" id="notifOn">알림 받기</button></div>`;
+  document.getElementById("notifOn").onclick = turnOn;
+}
+
+async function currentSub() {
+  if (!canPush()) return null;
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    return reg ? await reg.pushManager.getSubscription() : null;
+  } catch { return null; }
+}
+
+function card(title, html) {
+  return `<div class="notif col" style="gap:3px;align-items:flex-start">
+    <b class="tiny">${title}</b><span class="tiny muted">${html}</span></div>`;
+}
+
+async function turnOn() {
+  const btn = document.getElementById("notifOn");
+  btn.disabled = true; btn.textContent = "설정 중…";
+  try {
+    // 권한 요청은 클릭 안에서 해야 한다. 로딩 중에 미리 물으면 차단당한다.
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") { await renderNotif(); return; }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true, applicationServerKey: b64ToBytes(VAPID) });
+    const r = await fetch("api/subscribe", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify(sub.toJSON()) });
+    if (!r.ok) throw new Error(await r.text());
+    // 켠 직후 확인 알림을 한 번 띄운다. 됐는지 안 됐는지 알 수 없으면
+    // 다음 경기까지 기다렸다가 안 오는 것을 확인하게 된다.
+    reg.showNotification("스타볼 알림이 켜졌어요", {
+      body: "경기일 아침과 마감 2시간 전에 추천값을 보내드립니다.",
+      icon: "icon-192.png", badge: "icon-192.png", tag: "starball" });
+  } catch (e) {
+    notifBox.innerHTML = card("알림을 켜지 못했어요",
+      `잠시 후 다시 시도해 주세요. (${String(e.message || e).slice(0, 80)})`);
+    return;
+  }
+  await renderNotif();
+}
+
+async function turnOff(sub) {
+  try {
+    await fetch("api/unsubscribe", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ endpoint: sub.endpoint }) });
+    await sub.unsubscribe();
+  } catch {}
+  await renderNotif();
+}
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").then(renderNotif).catch(() => { renderNotif(); });
+} else {
+  renderNotif();
+}
 </script>
 </body>
 </html>

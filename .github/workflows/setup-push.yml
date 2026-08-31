@@ -1,0 +1,29 @@
+name: 웹 푸시 1회 설정
+
+# 손으로 한 번만 돌리는 설정용 워크플로.
+# Cloudflare Pages 프로젝트에 구독 저장소(KV)와 열쇠를 붙인다.
+# 여러 번 돌려도 같은 상태가 되므로 실패하면 그냥 다시 돌리면 된다.
+
+on:
+  workflow_dispatch:
+    inputs:
+      kv_id:
+        description: '대시보드에서 KV 를 직접 만든 경우 그 ID (비워두면 자동 생성 시도)'
+        required: false
+        default: ''
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install requests
+      - name: Cloudflare 설정
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PUSH_SEND_SECRET: ${{ secrets.PUSH_SEND_SECRET }}
+        run: python setup_push.py --kv-id "${{ inputs.kv_id }}"

@@ -31,6 +31,11 @@ permissions:
   pages: write
   id-token: write
 
+env:
+  # 웹앱 주소. 알림에 담기는 링크와 캘린더 파일이 이 값을 쓴다.
+  # 주소가 바뀌면 여기만 고치면 된다.
+  SITE_URL: https://starball-9oj.pages.dev
+
 jobs:
   predict:
     runs-on: ubuntu-latest
@@ -74,6 +79,17 @@ jobs:
           python starball_predictor.py --reminder
           echo "마감 임박 알림 단계 완료"
 
+      - name: 마감 임박 웹 푸시 (지인용)
+        # ntfy 는 내가 쓰는 채널이고 이쪽은 웹앱 구독자용이다. 둘은 독립이라
+        # 한쪽이 실패해도 다른 쪽은 가야 한다.
+        # 경기 1~3시간 전이 아니면 스크립트가 스스로 건너뛴다.
+        continue-on-error: true
+        if: github.event.schedule != '0 1 * * *'
+        env:
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          PUSH_SEND_SECRET: ${{ secrets.PUSH_SEND_SECRET }}
+        run: python push_send.py --site "$SITE_URL" --reminder
+
       - name: 예측 실행 및 푸시 발송
         # 아침 실행에서만 전체 예측을 보낸다.
         if: github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch'
@@ -112,6 +128,24 @@ jobs:
           python webdata.py both
           echo "webdata 종료 코드: $?"
           exit 0
+
+      - name: 캘린더 구독 파일 생성
+        # 아이폰은 애플 정책상 홈 화면에 추가된 웹앱에만 웹 푸시를 허용한다.
+        # 홈 화면 추가를 안 하는 사람용 우회로다 — 기기 기본 캘린더가 알린다.
+        continue-on-error: true
+        if: always() && (github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch')
+        run: python make_ics.py --site "$SITE_URL"
+
+      - name: 아침 웹 푸시 (지인용)
+        # webdata 뒤에 둔다. 그래야 방금 계산한 today.json 을 보낸다.
+        # 앞에 두면 어제 값을 보내고, 스크립트가 날짜를 확인해 아무것도
+        # 보내지 않는 편이 낫지만 그러면 알림이 하루 빠진다.
+        continue-on-error: true
+        if: always() && (github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch')
+        env:
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          PUSH_SEND_SECRET: ${{ secrets.PUSH_SEND_SECRET }}
+        run: python push_send.py --site "$SITE_URL"
 
       - name: 갱신된 데이터 커밋
         if: always() && (github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch')

@@ -1,6 +1,6 @@
 // 홈화면에서 열었을 때 껍데기가 즉시 뜨게 하고, 데이터는 항상 새로 받는다.
 // 예측값을 캐시에서 주면 어제 값을 보여주게 되므로 절대 캐시하지 않는다.
-const SHELL = "starball-shell-v1";
+const SHELL = "starball-shell-v2";
 const FILES = ["./index.html", "./manifest.webmanifest",
                "./icon-192.png", "./icon-512.png"];
 
@@ -17,6 +17,7 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== location.origin) return;
+  if (url.pathname.startsWith("/api/")) return;   // 구독 API 는 캐시 대상이 아니다
 
   // 데이터는 네트워크 우선. 오프라인이면 마지막으로 성공한 응답을 준다.
   if (url.pathname.endsWith("today.json") || url.pathname.endsWith("history.json")) {
@@ -31,4 +32,60 @@ self.addEventListener("fetch", e => {
   }
 
   e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+});
+
+
+// ── 웹 푸시 ─────────────────────────────────────────────────────────────
+// 깃헙 액션이 보낸 알림을 받아 잠금화면에 띄운다.
+// 본문은 JSON 이지만, 형식이 깨져 왔더라도 알림은 반드시 띄워야 한다.
+// showNotification 을 호출하지 않으면 브라우저가 "이 사이트가 백그라운드에서
+// 실행됐습니다" 같은 기본 알림을 대신 띄운다.
+self.addEventListener("push", e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data && e.data.text() }; }
+
+  const title = d.title || "스타볼 예측";
+  e.waitUntil(self.registration.showNotification(title, {
+    body: d.body || "오늘 추천값이 준비됐습니다.",
+    icon: "./icon-192.png",
+    badge: "./icon-192.png",
+    // 같은 tag 를 쓰면 아침 알림이 마감 알림으로 조용히 교체된다.
+    // 알림이 두 개 쌓여 어느 게 최신인지 헷갈리는 것을 막는다.
+    tag: d.tag || "starball",
+    renotify: true,
+    data: { url: d.url || "./index.html" },
+  }));
+});
+
+// 알림을 누르면 이미 열린 창이 있으면 그것을 살리고, 없으면 새로 연다.
+// 새 창을 무조건 열면 홈화면 웹앱이 여러 개 겹친다.
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+  const target = (e.notification.data && e.notification.data.url) || "./index.html";
+  e.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const w of wins) {
+      if (w.url.includes(location.origin)) {
+        await w.focus();
+        if ("navigate" in w) { try { await w.navigate(target); } catch {} }
+        return;
+      }
+    }
+    await self.clients.openWindow(target);
+  })());
+});
+
+// 브라우저가 구독을 갱신했을 때(엔드포인트가 바뀐다) 서버에 다시 알려준다.
+// 이걸 빼면 어느 날 조용히 알림이 끊기고 이유를 알 수 없다.
+self.addEventListener("pushsubscriptionchange", e => {
+  e.waitUntil((async () => {
+    const sub = e.newSubscription || await self.registration.pushManager.subscribe(
+      { userVisibleOnly: true,
+        applicationServerKey: e.oldSubscription?.options?.applicationServerKey });
+    if (!sub) return;
+    await fetch("./api/subscribe", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify(sub.toJSON()),
+    }).catch(() => {});
+  })());
 });
