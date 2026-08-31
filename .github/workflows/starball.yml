@@ -151,10 +151,13 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "::notice::Cloudflare Secret 이 없어 건너뜁니다(깃헙 페이지만 배포)."
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::notice::Cloudflare 토큰이 없어 건너뜁니다(깃헙 페이지만 배포)."
             exit 0
           fi
+          # ACCOUNT_ID 는 없어도 된다 — 토큰이 계정 하나에만 걸려 있으면
+          # wrangler 가 스스로 찾는다. 여러 계정에 걸린 토큰이면 실패하면서
+          # 후보 목록을 찍어주니, 그때 Secret 을 추가하면 된다.
           npx --yes wrangler@latest pages deploy web             --project-name=starball --branch=main --commit-dirty=true
 
       - name: 깃헙 페이지에 웹앱 배포
