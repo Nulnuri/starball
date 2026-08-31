@@ -161,6 +161,12 @@ jobs:
           # ACCOUNT_ID 는 없어도 된다 — 토큰이 계정 하나에만 걸려 있으면
           # wrangler 가 스스로 찾는다. 여러 계정에 걸린 토큰이면 실패하면서
           # 후보 목록을 찍어주니, 그때 Secret 을 추가하면 된다.
+          # CI 에서는 프로젝트를 자동 생성해주지 않는다. 없으면 만들고 배포한다.
+          # 이미 있으면 create 가 실패하므로 목록으로 먼저 확인한다.
+          if ! npx --yes wrangler@latest pages project list 2>/dev/null                | grep -qw starball; then
+            echo "프로젝트가 없어 생성합니다"
+            npx --yes wrangler@latest pages project create starball               --production-branch=main
+          fi
           npx --yes wrangler@latest pages deploy web             --project-name=starball --branch=main --commit-dirty=true
 
       - name: 깃헙 페이지에 웹앱 배포
