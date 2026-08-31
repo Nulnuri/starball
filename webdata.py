@@ -119,7 +119,7 @@ def build_today(ctx: S.GameContext, pred: S.Prediction, picks: list) -> dict:
         "missions": missions,
         "joint": {
             "prob": round(combo.get("best_prob", 0.0), 4),
-            # 리그 기저 최빈 조합의 확률. 모델을 이 값과 나란히 보여줘야
+            # 리그에서 가장 흔한 조합의 확률. 모델을 이 값과 나란히 보여줘야
             # 사용자가 '모델이 더 나은가'를 스스로 판단할 수 있다.
             "baseline": round(max(S.BASE_COMBO.values()), 4)
             if S.BASE_COMBO else None,

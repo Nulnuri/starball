@@ -115,7 +115,7 @@ PROB_CALIBRATION = 0.76
 # 모델 확률을 리그 기저 분포와 섞는 비율. 1.0 이면 모델만, 0.0 이면 기저만.
 # 모델이 근거 없이 기저에서 벗어나면 오히려 손해라, 백테스트로 적합한다.
 # 정확도와 다양성의 맞바꿈. 468경기 실측:
-#   α    서로 다른 조합  최빈 비중   3미션 동시
+#   α    서로 다른 조합  흔한값 비중  3미션 동시
 #   1.0        5개       66%     12.21%
 #   0.7        4개       80%     12.21%   ← 채택
 #   0.5        4개       92%     12.42%
@@ -180,7 +180,7 @@ def _load_base_rates() -> None:
     except Exception as e:
         print(f"base_rates.json 을 읽지 못했습니다({e})", file=sys.stderr)
 
-# 문항별 실측 성적: 최빈 선택지를 그냥 찍는 것 대비 개선폭(%p).
+# 문항별 실측 성적: 가장 흔한 선택지를 계속 찍는 것 대비 개선폭(%p).
 # 이 값이 SKILL_THRESHOLD 미만이면 모델이 정보를 못 주는 문항이므로
 # 추천으로 내세우지 않는다. 재측정: python backtest.py
 #
@@ -195,7 +195,7 @@ def _load_base_rates() -> None:
 # 절제 실험(ablation.py) 결과 전체 모델 53.2% vs '항상 홈팀' 51.7% = +1.5%p,
 # 이것도 표준오차 ±2.1%p 안이다.
 QUESTION_SKILL = {
-    # 실측 적중률과 '최빈만 찍기' 대비 개선폭(%p).
+    # 실측 적중률과 '가장 흔한 값만 찍기' 대비 개선폭(%p).
     # LG 96경기 시점고정 백테스트, 0~10 정확값 구조 기준.
     # 화면에 그대로 띄운다 — 사용자가 문항별로 얼마나 믿을지 스스로 정하게.
     "outcome": {"hit": 54.2, "base": 52.1, "gain": +2.1},
@@ -1583,7 +1583,7 @@ def render(ctx: GameContext, pred: Prediction, picks: list) -> str:
     e = pred.exp
     L.append(f"\n[ 예상 스코어 ]  {lg.name} {e['lg_runs']:.2f}"
              f" : {e['opp_runs']:.2f} {opp.name}    "
-             f"최빈 스코어 {pred.modal_score[0]}-{pred.modal_score[1]},"
+             f"가장 흔한 스코어 {pred.modal_score[0]}-{pred.modal_score[1]},"
              f" 기대 마진 {pred.exp_margin:+.2f}")
     L.append(f"   선발 예상 자책점 — {lg.name} {e['lg_sp_er']:.2f}점,"
              f" {opp.name} {e['opp_sp_er']:.2f}점")

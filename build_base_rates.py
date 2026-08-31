@@ -72,7 +72,7 @@ def main(argv: list) -> int:
         print(f"  {k:<9}", " · ".join(f"{l}={c/n*100:.0f}%"
                                       for l, c in per[k].most_common()))
     top = joint.most_common(1)[0]
-    print(f"  최빈 조합: {'|'.join(top[0])} = {top[1]/n*100:.1f}%")
+    print(f"  가장 흔한 조합: {'|'.join(top[0])} = {top[1]/n*100:.1f}%")
     return 0
 
 

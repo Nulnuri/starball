@@ -252,7 +252,7 @@ def run(games: list, team: str = None, start: date = None,
     brier = defaultdict(list)
     calib = defaultdict(lambda: [0, 0])       # 확률 구간 → [실제 발생, 전체]
     home_base = [0, 0]
-    truth_counts = defaultdict(lambda: defaultdict(int))   # 최빈 기준선용
+    truth_counts = defaultdict(lambda: defaultdict(int))   # 가장 흔한 값 기준선용
     combo_hits = {"best": [0, 0], "greedy": [0, 0]}
     truth_combo = defaultdict(int)
     seen = defaultdict(lambda: defaultdict(int))   # 시점별 문항 기저
@@ -369,10 +369,10 @@ def report(res: dict) -> None:
         print("표본이 없습니다. --from 을 앞당기거나 경기 로그를 확인하세요.")
         return
 
-    print("\n기준선은 '항상 최빈 선택지 찍기'다. 1/n 은 실제 분포가 고르지 않아")
+    print("\n기준선은 '항상 가장 흔한 선택지 찍기'다. 1/n 은 실제 분포가 고르지 않아")
     print("모델을 과대평가한다(합계 홈런의 1~2개는 원래 절반 가까이 나온다).")
     print("─" * 76)
-    print(f"{'문항':<16}{'적중률':>9}{'최빈찍기':>10}{'개선':>9}"
+    print(f"{'문항':<16}{'적중률':>9}{'흔한값':>10}{'개선':>9}"
           f"{'브라이어':>11}{'표본':>7}")
     print("─" * 76)
     useless = []
@@ -392,7 +392,7 @@ def report(res: dict) -> None:
               f"{tot:>7}{mark}")
     print("─" * 76)
     if useless:
-        print(f"\n최빈 선택지를 그냥 찍는 것보다 나을 게 없는 문항: "
+        print(f"\n가장 흔한 선택지를 찍는 것보다 나을 게 없는 문항: "
               f"{', '.join(useless)}")
 
     ch = res.get("combo_hits") or {}
@@ -407,7 +407,7 @@ def report(res: dict) -> None:
                             ("greedy", "문항별 1위 따로 고르기")):
             hit, n = ch[mode]
             print(f"  {label:<34}{hit / n * 100:>7.2f}%   ({hit}/{n})")
-        print(f"  {'항상 같은 조합 (최빈, 사후적)':<34}{best_fixed * 100:>7.2f}%")
+        print(f"  {'항상 같은 조합 (가장 흔한 값, 사후적)':<34}{best_fixed * 100:>7.2f}%")
         import math
         se = math.sqrt(0.1 * 0.9 / tot) * 100
         print(f"\n  표본 {tot}건 · 표준오차 ≈ ±{se:.2f}%p")

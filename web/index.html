@@ -239,8 +239,9 @@ function viewWhy() {
       ${D.missions.filter(m => m.skill).map(m => trustRow(m)).join("")}
       <div class="tiny muted" style="border-top:1px solid var(--surface-2);padding-top:9px">
         LG 96경기를 그날 시점 데이터로 다시 계산해 잰 값입니다.
-        <b>최빈</b>은 아무 계산 없이 가장 흔한 값만 매번 찍었을 때고,
-        모델이 그보다 못하면 그 문항은 사실상 운입니다.
+        <b>흔한 값</b>은 아무 계산 없이 그동안 가장 많이 나온 값만 매번
+        똑같이 찍었을 때입니다. 예측이 그보다 못하면 그 문항은 사실상
+        운이라는 뜻입니다.
       </div>
     </div>
   </details>
@@ -401,8 +402,8 @@ function logRow(g) {
 function trustRow(m) {
   const s = m.skill, good = s.gain >= 2.0;
   const w = v => Math.max(2, Math.min(100, v)).toFixed(0);
-  const verdict = good ? "모델이 낫습니다"
-    : s.gain <= -1 ? "최빈보다 못합니다" : "최빈과 같습니다";
+  const verdict = good ? "예측이 낫습니다"
+    : s.gain <= -1 ? "흔한 값이 낫습니다" : "흔한 값과 비슷합니다";
   const col = good ? "var(--ok)" : "var(--ink-faint)";
   return `<div class="col" style="gap:6px">
     <div class="row" style="align-items:baseline">
@@ -410,13 +411,13 @@ function trustRow(m) {
       <span class="tiny" style="color:${col}">${esc(verdict)}</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="tiny muted" style="width:34px">모델</span>
+      <span class="tiny muted" style="width:48px">이 예측</span>
       <span style="flex-grow:1;height:5px;background:var(--surface-2);border-radius:3px;display:flex">
         <i style="width:${w(s.hit)}%;background:${col};border-radius:3px"></i></span>
       <span class="num tiny" style="width:34px;text-align:right;color:${col}">${s.hit.toFixed(0)}%</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="tiny muted" style="width:34px">최빈</span>
+      <span class="tiny muted" style="width:48px">흔한 값</span>
       <span style="flex-grow:1;height:5px;background:var(--surface-2);border-radius:3px;display:flex">
         <i style="width:${w(s.base)}%;background:var(--line-2);border-radius:3px"></i></span>
       <span class="num tiny muted" style="width:34px;text-align:right">${s.base.toFixed(0)}%</span>
