@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #F0245C; text-decoration: none; }
+    a:hover { color: #FF5C87; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: linear-gradient(170deg, #241016 0%, #12090C 55%, #0B0708 100%); color: #EDE6E8; font-family: 'IBM Plex Sans KR', system-ui, sans-serif; box-sizing: border-box; padding: 96px 16px 28px; display: flex; flex-direction: column; gap: 30px; overflow: hidden;">
+
+  <!-- 잠금화면 시계 -->
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+    <div style="font-size: 13px; color: #A79BA0;">8월 28일 금요일</div>
+    <div style="font-family: Archivo, sans-serif; font-size: 74px; font-weight: 300; letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums;">10:04</div>
+  </div>
+
+  <!-- 알림 카드 -->
+  <div style="background: rgba(46, 38, 41, 0.82); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 16px; padding: 14px 15px; display: flex; flex-direction: column; gap: 9px;">
+
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <div style="width: 20px; height: 20px; border-radius: 5px; background: #F0245C; display: flex; align-items: center; justify-content: center; flex: 0 0 auto;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round"><path d="M12 4a8 8 0 0 1 8 8"></path><circle cx="12" cy="12" r="8"></circle></svg>
+      </div>
+      <span style="font-size: 12px; color: #A79BA0; flex-grow: 1;">ntfy</span>
+      <span style="font-size: 12px; color: #7A6F74;">지금</span>
+    </div>
+
+    <div style="font-size: 14px; font-weight: 600;">오늘의 LG 스타볼 예측 추천</div>
+
+    <div style="font-family: Archivo, 'IBM Plex Sans KR', sans-serif; font-size: 17px; font-weight: 600; letter-spacing: -0.01em;">패 · 4점 이상 · 0개</div>
+
+    <div style="font-size: 12px; color: #A79BA0; line-height: 1.5;">LG@롯데 사직 18:30 · 예상 5.0-5.3 · 신뢰도 낮음</div>
+
+    <div style="height: 1px; background: rgba(255,255,255,0.07);"></div>
+
+    <div style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #C4B9BD; font-variant-numeric: tabular-nums;">
+      <div style="display: flex; justify-content: space-between;"><span>MISSION 1 승패</span><span style="color: #EDE6E8;">패 · 49%</span></div>
+      <div style="display: flex; justify-content: space-between;"><span>MISSION 2 득실 차</span><span style="color: #EDE6E8;">4점 이상 · 46%</span></div>
+      <div style="display: flex; justify-content: space-between;"><span>MISSION 3 홈런 수</span><span style="color: #EDE6E8;">0개 · 41%</span></div>
+    </div>
+
+    <div style="font-size: 11px; color: #8A7A5C;">3개 모두 적중 확률 13.0% · 스타볼 1개</div>
+
+    <div style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 44px; margin-top: 2px; border-radius: 10px; background: rgba(240, 36, 92, 0.16); border: 1px solid rgba(240, 36, 92, 0.4); color: #FF6F92; font-size: 13px; font-weight: 600;">
+      스타볼 입력하러
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"></path><path d="M9 7h8v8"></path></svg>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1;"></div>
+
+  <div style="text-align: center; font-size: 11px; line-height: 1.6; color: #6E6367;">
+    앱을 만들지 않아도 여기까지는 오늘 됩니다.<br>
+    ntfy 앱 설치 + 토픽 구독이면 끝입니다.
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

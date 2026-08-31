@@ -1,0 +1,144 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #F0245C; text-decoration: none; }
+    a:hover { color: #FF5C87; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: #131011; color: #EDE6E8; font-family: 'IBM Plex Sans KR', system-ui, sans-serif; box-sizing: border-box; padding: 28px 20px 20px; display: flex; flex-direction: column; gap: 16px; overflow: hidden;">
+
+  <!-- 머리 -->
+  <div style="display: flex; align-items: baseline; justify-content: space-between;">
+    <div style="font-family: Archivo, system-ui, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.16em; color: #F0245C;">STARBALL</div>
+    <div style="font-size: 12px; color: #7A6F74; font-variant-numeric: tabular-nums;">8월 28일 (금)</div>
+  </div>
+
+  <!-- 경기 카드 -->
+  <div style="background: #1C1719; border: 1px solid #2A2326; border-radius: 4px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <div style="font-size: 15px; font-weight: 600;">LG 트윈스</div>
+        <div style="font-size: 11px; color: #7A6F74;">원정</div>
+      </div>
+      <div style="font-family: Archivo, sans-serif; font-size: 12px; font-weight: 600; color: #5C5257; letter-spacing: 0.1em;">VS</div>
+      <div style="display: flex; flex-direction: column; gap: 2px; align-items: flex-end;">
+        <div style="font-size: 15px; font-weight: 600;">롯데 자이언츠</div>
+        <div style="font-size: 11px; color: #7A6F74;">홈</div>
+      </div>
+    </div>
+    <div style="height: 1px; background: #2A2326;"></div>
+    <div style="display: flex; gap: 14px; font-size: 12px; color: #A79BA0; font-variant-numeric: tabular-nums;">
+      <span>사직</span><span style="color: #3D3438;">·</span><span>18:30</span>
+      <span style="color: #3D3438;">·</span><span>선발 김윤식 → 나균안</span>
+    </div>
+  </div>
+
+  <!-- 미션 3개 -->
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+
+    <div style="background: #1C1719; border: 1px solid #2A2326; border-left: 3px solid #F0245C; border-radius: 3px; padding: 13px 16px; display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; flex-direction: column; gap: 3px;">
+        <div style="font-family: Archivo, sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.12em; color: #6E6367;">MISSION 1</div>
+        <div style="font-size: 12px; color: #A79BA0;">승패 맞히기</div>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 12px;">
+        <div style="font-size: 30px; font-weight: 600; letter-spacing: -0.01em;">패</div>
+        <div style="font-family: Archivo, sans-serif; font-size: 14px; font-weight: 500; color: #7A6F74; font-variant-numeric: tabular-nums; width: 38px; text-align: right;">49%</div>
+      </div>
+    </div>
+
+    <div style="background: #1C1719; border: 1px solid #2A2326; border-left: 3px solid #F0245C; border-radius: 3px; padding: 13px 16px; display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; flex-direction: column; gap: 3px;">
+        <div style="font-family: Archivo, sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.12em; color: #6E6367;">MISSION 2</div>
+        <div style="font-size: 12px; color: #A79BA0;">득실 차 맞히기</div>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 12px;">
+        <div style="font-size: 26px; font-weight: 600; letter-spacing: -0.01em;">4점 이상</div>
+        <div style="font-family: Archivo, sans-serif; font-size: 14px; font-weight: 500; color: #7A6F74; font-variant-numeric: tabular-nums; width: 38px; text-align: right;">46%</div>
+      </div>
+    </div>
+
+    <div style="background: #1C1719; border: 1px solid #2A2326; border-left: 3px solid #F0245C; border-radius: 3px; padding: 13px 16px; display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; flex-direction: column; gap: 3px;">
+        <div style="font-family: Archivo, sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.12em; color: #6E6367;">MISSION 3</div>
+        <div style="font-size: 12px; color: #A79BA0;">홈런 수 · LG 기준</div>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 12px;">
+        <div style="font-size: 30px; font-weight: 600; letter-spacing: -0.01em;">0개</div>
+        <div style="font-family: Archivo, sans-serif; font-size: 14px; font-weight: 500; color: #7A6F74; font-variant-numeric: tabular-nums; width: 38px; text-align: right;">41%</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 동시 적중 확률 -->
+  <div style="background: #1C1719; border: 1px solid #2A2326; border-radius: 4px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between;">
+      <div style="font-size: 12px; color: #A79BA0;">세 개 모두 적중할 확률</div>
+      <div style="font-family: Archivo, sans-serif; font-size: 24px; font-weight: 700; color: #D9A15C; font-variant-numeric: tabular-nums;">13.0%</div>
+    </div>
+    <div style="height: 6px; background: #241E21; border-radius: 3px; overflow: hidden; display: flex;">
+      <div style="width: 13%; background: #D9A15C;"></div>
+    </div>
+    <div style="display: flex; gap: 6px; align-items: flex-start;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A7A5C" stroke-width="2" stroke-linecap="round" style="flex: 0 0 auto; margin-top: 1px;">
+        <circle cx="12" cy="12" r="9"></circle><path d="M12 8v5"></path><path d="M12 16.5v.01"></path>
+      </svg>
+      <div style="font-size: 11px; line-height: 1.5; color: #8A7A5C;">리그 평균대로 찍어도 12.8%입니다. 모델이 더 낫다는 근거는 아직 없습니다.</div>
+    </div>
+  </div>
+
+  <!-- 스타볼 진행도 -->
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 2px;">
+    <div style="font-size: 12px; color: #7A6F74;">스타볼 <span style="color: #EDE6E8; font-family: Archivo, sans-serif; font-weight: 600;">3</span> / 7</div>
+    <div style="display: flex; gap: 5px;">
+      <div style="width: 14px; height: 14px; border-radius: 50%; background: #F0245C;"></div>
+      <div style="width: 14px; height: 14px; border-radius: 50%; background: #F0245C;"></div>
+      <div style="width: 14px; height: 14px; border-radius: 50%; background: #F0245C;"></div>
+      <div style="width: 14px; height: 14px; border-radius: 50%; border: 1px solid #3D3438;"></div>
+      <div style="width: 14px; height: 14px; border-radius: 50%; border: 1px solid #3D3438;"></div>
+      <div style="width: 14px; height: 14px; border-radius: 50%; border: 1px solid #3D3438;"></div>
+      <div style="width: 14px; height: 14px; border-radius: 50%; border: 1px solid #3D3438;"></div>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1;"></div>
+
+  <!-- CTA -->
+  <div style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; background: #F0245C; color: #FFFFFF; border-radius: 4px; font-size: 15px; font-weight: 600;">
+    LG 트윈스 앱 열기
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 17 17 7"></path><path d="M9 7h8v8"></path>
+    </svg>
+  </div>
+
+  <!-- 탭 바 -->
+  <div style="display: flex; gap: 4px; padding-top: 6px; border-top: 1px solid #241E21;">
+    <div style="flex-grow: 1; height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #F0245C;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 4l9 7"></path><path d="M5 10v9h14v-9"></path></svg>
+      <span style="font-size: 10px;">오늘</span>
+    </div>
+    <div style="flex-grow: 1; height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #5C5257;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"></path><path d="M10 19V5"></path><path d="M16 19v-7"></path><path d="M21 19H3"></path></svg>
+      <span style="font-size: 10px;">근거</span>
+    </div>
+    <div style="flex-grow: 1; height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #5C5257;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg>
+      <span style="font-size: 10px;">기록</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
