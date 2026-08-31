@@ -16,3 +16,11 @@ design/starball-app-screens.html
 # 임시
 _*.png
 *.log
+
+# wrangler 로컬 실행이 남기는 빌드 부스러기. 저장소에 들어가면 안 된다.
+.wrangler/
+
+# 로컬 검증용 임시 파일
+_*.log
+_chk.js
+_t/
