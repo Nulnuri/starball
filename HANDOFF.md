@@ -4,6 +4,9 @@
 로컬에 남고 따라오지 않으므로, 여기에 "코드만 봐서는 알 수 없는 것"을 적는다.
 코드 구조는 `web/docs/architecture.html`, 설치는 `web/docs/setup.html` 을 본다.
 
+외장하드로 넘어온 경우, 하드 루트의 `맥북에서-스타볼-시작하기.txt` 에
+준비물·가상환경·로그인까지 순서대로 적혀 있다.
+
 ## 지금 상태 (2026-08-31)
 
 - 저장소 `github.com/Nulnuri/starball` (개인 계정, public, main)
@@ -17,10 +20,28 @@
 
 ## 시작하기
 
+**맥·리눅스**
+
 ```bash
+cd <이 폴더>
 git config --global --add safe.directory "$(pwd)"   # 외장하드(exFAT)일 때만
+
+# 가상환경을 쓴다. 맥의 Homebrew 파이썬은 시스템 전체 설치를 막아서
+# (externally-managed-environment) pip3 install 이 그냥 실패한다.
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+
 gh auth login          # 반드시 개인 계정으로. 회사 계정이면 push 가 403 이다
+python test_starball.py && python test_push.py     # 49개 통과가 정상
+```
+
+다음에 다시 열 때는 `source .venv/bin/activate` 만 하면 된다.
+`.venv/` 는 `.gitignore` 에 있다.
+
+**윈도우**
+
+```bash
+pip install -r requirements.txt
 python test_starball.py && python test_push.py
 ```
 
