@@ -24,6 +24,21 @@ gh auth login          # 반드시 개인 계정으로. 회사 계정이면 push
 python test_starball.py && python test_push.py
 ```
 
+## 검증에만 쓰는 도구 (없어도 본체는 돌아간다)
+
+`requirements.txt` 에는 넣지 않았다. 화면·규격을 눈으로 확인할 때만 쓴다.
+
+```bash
+pip install playwright && playwright install chromium   # 화면 렌더링·JS 오류 확인
+pip install icalendar                                  # .ics 를 실제 파서로 검증
+```
+
+Playwright 로 확인할 때 주의: 헤드리스 브라우저는 **알림을 지원하지 않아**
+`Notification.permission` 이 항상 `denied` 로 나온다. `channel="chromium"`
+(새 헤드리스)을 쓰면 `granted` 가 되어 버튼까지 볼 수 있지만, 실제 푸시
+구독은 크롬·엣지 모두 헤드리스에서 막혀 있다. 발송 확인은 실제 폰으로만
+가능하다 — `push_send.py --who` 로 구독자를 보고 `--test` 로 보낸다.
+
 ## 저장소에 없는 것
 
 `starball-secrets.txt` (VAPID 비밀키 · 발송 열쇠). 외장하드 루트에 있다.

@@ -1,4 +1,11 @@
+# 예측 본체
 requests>=2.31
-beautifulsoup4>=4.12
 pandas>=2.2
-pywebpush
+numpy>=1.26          # starball_predictor 의 몬테카를로에서 직접 쓴다
+
+# 웹앱 구독자에게 웹 푸시 발송 (push_send.py)
+# py-vapid / cryptography 는 pywebpush 가 끌고 오지만, push_send 와 테스트에서
+# 직접 import 하므로 명시한다.
+pywebpush>=1.14
+py-vapid>=1.9
+cryptography>=42.0
