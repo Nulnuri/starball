@@ -104,9 +104,24 @@ def main() -> int:
     ap.add_argument("--today", default="web/today.json", help="예측 데이터 경로")
     ap.add_argument("--reminder", action="store_true", help="마감 임박용 짧은 알림")
     ap.add_argument("--dry-run", action="store_true", help="발송하지 않고 내용만 출력")
+    ap.add_argument("--test", action="store_true",
+                    help="확인용 알림 한 통. 날짜·시간 검사를 건너뛴다")
+    ap.add_argument("--who", action="store_true",
+                    help="발송하지 않고 구독자 목록만 보여준다")
     args = ap.parse_args()
 
     site = args.site.rstrip("/")
+    secret_env = os.environ.get("PUSH_SEND_SECRET", "").strip()
+
+    if args.who:
+        if not secret_env:
+            raise SystemExit("PUSH_SEND_SECRET 이 없습니다")
+        subs = fetch_subs(site, secret_env)
+        log(f"구독자 {len(subs)}명")
+        for s in subs:
+            host = s["endpoint"].split("/")[2]
+            log(f"   {s.get('since','?')[:16]}  {host:<38} {s.get('ua','')[:44]}")
+        return 0
 
     try:
         today = json.load(open(args.today, encoding="utf-8"))
@@ -116,6 +131,21 @@ def main() -> int:
 
     g = today.get("game") or {}
     now = datetime.now(KST)
+
+    # 확인용 발송. 실제 폰에 도착하는지 보는 것이 목적이라 날짜 검사를 건너뛴다.
+    if args.test:
+        payload = {
+            "title": "⚾ 스타볼 알림 테스트",
+            "body": chr(10).join([
+                "이 알림이 보이면 설정이 끝났습니다.",
+                f"{now:%m월 %d일 %H:%M} 발송",
+            ]),
+            "url": f"{site}/index.html",
+            # 실제 알림과 tag 를 다르게 둔다. 같으면 테스트가 그날의 예측
+            # 알림을 조용히 덮어쓴다.
+            "tag": "starball-test",
+        }
+        return _deliver(site, payload, args.dry_run)
 
     # 1) 오늘 것인지 확인.
     #    크론이 밀리거나 예측이 실패한 날에는 저장소에 어제 값이 남아 있다.
@@ -151,7 +181,16 @@ def main() -> int:
         log("오늘은 경기가 없어 웹 푸시를 보내지 않습니다")
         return 0
 
-    if args.dry_run:
+    return _deliver(site, payload, args.dry_run)
+
+
+def _deliver(site: str, payload: dict, dry_run: bool = False) -> int:
+    """구독자 전원에게 알림 한 통을 보낸다.
+
+    확인용(--test)과 실제 발송이 이 함수를 함께 쓴다. 테스트만 다른 길로
+    보내면, 테스트가 통과해도 실제 발송이 되는지는 여전히 모른다.
+    """
+    if dry_run:
         print(json.dumps(payload, ensure_ascii=False, indent=1))
         return 0
 
@@ -171,7 +210,7 @@ def main() -> int:
 
     data = json.dumps(payload, ensure_ascii=False)
     claims = {"sub": os.environ.get("VAPID_SUBJECT", "mailto:starball@example.invalid")}
-    # 만료는 12시간 후로 둔다. 기기가 꺼져 있어도 다음 알림 전에는 도착한다.
+    # 만료는 12시간. 기기가 꺼져 있어도 다음 알림 전에는 도착한다.
     ttl = 12 * 3600
 
     sent = failed = 0
@@ -185,6 +224,7 @@ def main() -> int:
         except WebPushException as e:
             code = getattr(e.response, "status_code", None)
             if code in DEAD:
+                # 지우지 않으면 매 실행마다 같은 실패가 쌓여 로그를 못 믿게 된다.
                 dead.append(s["key"])
             else:
                 failed += 1
@@ -197,7 +237,7 @@ def main() -> int:
         f"  (구독자 {len(subs)}, {datetime.now(KST):%H:%M})")
     prune(site, secret, dead)
 
-    # 한 명도 못 보냈고 만료도 아니면 설정 문제일 수 있다. 워크플로가 알아채게 한다.
+    # 한 명도 못 보냈고 실패만 있으면 설정 문제일 수 있다. 워크플로가 알아채게 한다.
     return 1 if sent == 0 and failed else 0
 
 
