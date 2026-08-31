@@ -27,6 +27,8 @@ MISSION 3  홈런 수 맞히기      0 ~ 10  (LG 기준)
 - **거울 주소** — <https://nulnuri.github.io/starball/> (같은 내용. Cloudflare 가 죽었을 때의 예비)
 - **직접 돌려보기** — `docs/` 안내서 (https://starball-9oj.pages.dev/docs/)
 
+다른 컴퓨터에서 이어서 작업하려면 [HANDOFF.md](HANDOFF.md) 를 먼저 보세요.
+
 설치는 [설치 안내](web/docs/setup.html), 내부 구조는
 [구조 문서](web/docs/architecture.html)를 보세요.
 
