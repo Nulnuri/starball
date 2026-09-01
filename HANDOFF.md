@@ -20,23 +20,33 @@
 
 ## 시작하기
 
-**맥·리눅스**
+**맥 — 외장하드(exFAT)에서 작업할 때**
 
 ```bash
-cd <이 폴더>
-git config --global --add safe.directory "$(pwd)"   # 외장하드(exFAT)일 때만
+cd /Volumes/T7/starball-lab
 
-# 가상환경을 쓴다. 맥의 Homebrew 파이썬은 시스템 전체 설치를 막아서
-# (externally-managed-environment) pip3 install 이 그냥 실패한다.
-python3 -m venv .venv && source .venv/bin/activate
+# 1) git 설정 두 개. 안 하면 시작부터 못 쓴다 (아래 "맥 함정" 참고)
+git config core.autocrlf input
+git config core.precomposeunicode true
+
+# 2) 가상환경은 반드시 내장 디스크에 만든다. 외장하드에 만들면 깨진다.
+python3 -m venv ~/.venvs/starball
+source ~/.venvs/starball/bin/activate
 pip install -r requirements.txt
 
-gh auth login          # 반드시 개인 계정으로. 회사 계정이면 push 가 403 이다
-python test_starball.py && python test_push.py     # 49개 통과가 정상
+# 3) 확인 — 30/30, 19/19 가 정상
+python test_starball.py && python test_push.py
 ```
 
-다음에 다시 열 때는 `source .venv/bin/activate` 만 하면 된다.
-`.venv/` 는 `.gitignore` 에 있다.
+다음부터는 이것만:
+
+```bash
+cd /Volumes/T7/starball-lab && source ~/.venvs/starball/bin/activate
+```
+
+`gh` 는 push 할 때만 필요하다. 맥에 없으면 Homebrew 로 깐다
+(`brew install gh` → `gh auth login`, **반드시 개인 계정 Nulnuri 로**.
+회사 계정이면 push 가 403 이다). Homebrew 자체가 없으면 brew.sh 참고.
 
 **윈도우**
 
@@ -44,6 +54,32 @@ python test_starball.py && python test_push.py     # 49개 통과가 정상
 pip install -r requirements.txt
 python test_starball.py && python test_push.py
 ```
+
+## 맥 + 외장하드(exFAT) 함정 — 2026-09-01 실제로 다 밟았다
+
+**가상환경을 외장하드에 만들면 안 된다.** 맥은 exFAT 처럼 확장속성을 못
+담는 파일시스템에 파일을 만들 때마다 `._이름` 짝꿍 파일(AppleDouble, 4KB
+바이너리)을 같이 만든다. 그래서 `._distutils-precedence.pth` 가 생기는데,
+파이썬의 `site.addsitedir()` 은 `*.pth` 를 전부 설정 파일로 읽으므로
+바이너리를 UTF-8 로 디코드하려다 죽는다. venv 안의 python 이 아예 실행되지
+않고 `UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb0` 만 나온다.
+원인이 전혀 드러나지 않는 에러다. **venv 는 `~/.venvs/starball` 에 둔다.**
+코드는 하드에, 가상환경은 내장 디스크에 — 속도도 이쪽이 훨씬 빠르다.
+
+**`core.autocrlf=input` 을 안 하면 28개 파일이 통째로 수정된 것으로 보인다.**
+윈도우 git 이 작업본을 CRLF 로 받아놨는데 맥 git 은 LF 를 기대해서, 모든
+줄이 바뀐 것으로 잡힌다(10,672 줄 추가 / 10,672 줄 삭제). 이 상태로
+`git add -A` 를 하면 줄바꿈만 바꾼 거대한 커밋이 올라가고, 이후 diff 가
+쓸모없어진다. 파일을 고칠 필요는 없다 — 설정만 바꾸면 깨끗해진다.
+
+**`core.precomposeunicode=true` 를 안 하면 `.gitignore` 의 한글이 안 먹는다.**
+맥은 파일명을 자모 분리형(NFD)으로 넘기는데 `.gitignore` 에 적힌 건 결합형
+(NFC)이라 서로 다른 문자열이 된다. `스타볼-구조문서.html` 같은 무시 대상이
+untracked 로 뜨고, `git add -A` 에 딸려 들어간다.
+
+**`claude` 가 터미널 PATH 에 없을 수 있다.** VS Code 확장으로 쓰고 있으면
+확장 안에만 있다. 터미널에서 쓰려면 따로 설치한다
+(`npm install -g @anthropic-ai/claude-code`).
 
 ## 검증에만 쓰는 도구 (없어도 본체는 돌아간다)
 
