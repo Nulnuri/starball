@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from collections import Counter, defaultdict
 
@@ -46,6 +47,18 @@ FEATURES = [
     "def_edge",                                      # 상대 타선 - 우리 실점
     "sp_edge",                                       # 상대 선발 ERA - 우리 선발 ERA
 ]
+
+# 실제로 학습에 넣는 특징. 위 21개를 다 쓰면 표본 474건에 과적합해서
+# 적중률이 55.3% 로 떨어지고, 확신도가 거짓이 된다(70% 라고 말한 경기의
+# 실제 적중률이 37.5% 였다). 7개로 줄이고 표준화하면 59.4% / 확신오차
+# 2.6%p 가 된다. 나머지 14개는 앞으로 표본이 늘면 다시 시험해볼 후보로
+# 남겨둔다 — build_rows 는 계속 21개를 다 만든다.
+#
+# 참고: 시즌 최종 순위를 미리 알고 강팀을 찍는 반칙 오라클이 59.2% 다.
+# 즉 59.4% 는 이 종목에서 사실상 상한이다. 더 올리려면 경기 전에 존재하지
+# 않는 정보(당일 부상·심판·날씨 변화)가 필요하다.
+CORE_FEATURES = ["home", "my_win", "op_win",
+                 "my_sp_era", "op_sp_era", "off_edge", "def_edge"]
 
 MIN_TEAM_GAMES = 15      # 팀 누적이 이만큼 쌓인 뒤부터 학습에 쓴다
 MIN_SP_IP = 20.0         # 선발 누적 이닝 하한
@@ -140,6 +153,7 @@ def build_rows(games: list) -> list:
             if len(f) != len(FEATURES):
                 raise SystemExit(f"특징 개수 불일치 {len(f)} != {len(FEATURES)}")
             rows.append({"date": x.get("date", ""), "team": tm, "feat": f,
+                         "season": int(str(x.get("date", "0"))[:4] or 0),
                          "y": 0 if my > oy else (2 if my < oy else 1)})
 
         # 특징을 다 만든 뒤에 누적을 갱신한다 (미래 정보 차단)
@@ -163,29 +177,78 @@ def build_rows(games: list) -> list:
     return rows
 
 
+def core_matrix(rows: list):
+    """핵심 특징만 뽑아낸다. 순서는 CORE_FEATURES 를 따른다."""
+    import numpy as np
+    ii = [FEATURES.index(n) for n in CORE_FEATURES]
+    return np.array([[r["feat"][k] for k in ii] for r in rows])
+
+
+def fit(rows: list, C: float):
+    """표준화 + 로지스틱. 표준화를 빼면 정규화가 특징마다 다르게 걸린다."""
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.preprocessing import StandardScaler
+    import numpy as np
+    X = core_matrix(rows)
+    y = np.array([r["y"] for r in rows])
+    sc = StandardScaler().fit(X)
+    m = LogisticRegression(max_iter=5000, C=C).fit(sc.transform(X), y)
+    return sc, m
+
+
+def rows_by_season(paths: list) -> list:
+    """시즌마다 따로 펼쳐 합친다.
+
+    여러 시즌을 이어붙여 한 번에 펼치면 팀 누적이 시즌 경계를 넘어가서,
+    2025 개막전 팀이 2024 성적을 들고 나온다. 실제로 이 탓에 성적이
+    59.8% 대신 55.3% 로 나왔다.
+    """
+    out = []
+    for path in paths:
+        try:
+            out += build_rows(load(path))
+        except FileNotFoundError:
+            print(f"{path} 없음 — 건너뜀", file=sys.stderr)
+    out.sort(key=lambda r: (r.get("season", 0), r["date"]))
+    return out
+
+
 def validate(rows: list, C: float) -> dict:
     """분할 지점을 옮겨가며 반복 검증한다.
 
     한 번만 자르면 그 구간의 운이 성적으로 잡힌다. 시간순이므로 항상 과거로
     학습해 미래를 맞힌다.
+
+    여러 시즌을 넣을 때는 **가장 최근 시즌 안에서만** 자른다. 전체를 비율로
+    자르면 검증 집합에 과거 시즌이 섞여, 실제로는 이미 지난 경기를 맞히는
+    성적이 섞여 들어간다(그래서 한때 55.3% 로 낮게 나왔다). 운영 중 상황은
+    '과거 시즌 전부 + 올 시즌 지금까지 → 다음 경기' 다.
     """
     import numpy as np
-    from sklearn.linear_model import LogisticRegression
 
-    out = {"base": [], "model": []}
+    newest = max(r.get("season", 0) for r in rows)
+    past = [r for r in rows if r.get("season", newest) != newest]
+    cur = [r for r in rows if r.get("season", newest) == newest]
+    if len(cur) < 120:                      # 시즌 초라 아직 자를 게 없다
+        past, cur = [], rows
+
+    out = {"base": [], "model": [], "calib": []}
     for frac in (0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8):
-        cut = int(len(rows) * frac)
-        tr, te = rows[:cut], rows[cut:]
+        cut = int(len(cur) * frac)
+        tr, te = past + cur[:cut], cur[cut:]
         if len(te) < 60:
             continue
-        Xtr = np.array([r["feat"] for r in tr])
-        Xte = np.array([r["feat"] for r in te])
         ytr = np.array([r["y"] for r in tr])
         yte = np.array([r["y"] for r in te])
         base = Counter(ytr).most_common(1)[0][0]
         out["base"].append(float((yte == base).mean()))
-        m = LogisticRegression(max_iter=5000, C=C).fit(Xtr, ytr)
-        out["model"].append(float((m.predict(Xte) == yte).mean()))
+        sc, m = fit(tr, C)
+        P = m.predict_proba(sc.transform(core_matrix(te)))
+        pred = m.classes_[P.argmax(1)]
+        ok = (pred == yte)
+        out["model"].append(float(ok.mean()))
+        # 말한 확신도와 실제 적중률의 차이. 이게 크면 화면의 % 를 믿을 수 없다.
+        out["calib"].append(float(abs(P.max(1).mean() - ok.mean())))
     return out
 
 
@@ -199,7 +262,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="승패 문항 학습")
     ap.add_argument("--log", nargs="*", default=None,
                     help=f"경기 로그. 기본값은 {TRAIN_FROM_SEASON} 시즌 이후 전부")
-    ap.add_argument("--C", type=float, default=0.2,
+    ap.add_argument("--C", type=float, default=0.3,
                     help="정규화 세기(작을수록 강하게 억제)")
     ap.add_argument("--emit", action="store_true", help="코드에 붙일 형태로 출력")
     args = ap.parse_args()
@@ -210,20 +273,11 @@ def main() -> int:
                          f"build_gamelog.py 로 먼저 받으세요.")
     print(f"학습에 쓰는 로그: {', '.join(paths)}", file=sys.stderr)
 
-    games = []
-    for p in paths:
-        try:
-            games += load(p)
-        except FileNotFoundError:
-            print(f"{p} 없음 — 건너뜀", file=sys.stderr)
-    games.sort(key=lambda g: g.get("date", ""))
-    if not games:
-        raise SystemExit("경기 로그가 없습니다. build_gamelog.py 를 먼저 돌리세요.")
-
-    rows = build_rows(games)
+    rows = rows_by_season(paths)
+    n_games = sum(len(load(p)) for p in paths if os.path.exists(p))
     if not rows:
         raise SystemExit("학습 표본이 없습니다.")
-    print(f"경기 {len(games)}건 → 학습 표본 {len(rows)}건 "
+    print(f"경기 {n_games}건 → 학습 표본 {len(rows)}건 "
           f"({rows[0]['date']} ~ {rows[-1]['date']})", file=sys.stderr)
     if len(rows) < 300:
         print("표본이 300건 미만이다. 계수를 갈아끼우기엔 이르다.", file=sys.stderr)
@@ -244,25 +298,34 @@ def main() -> int:
         print(f"  이 모델     {m:.1f}%   개선 {m - b:+.1f}%p "
               f"(범위 {min(v['model']) * 100:.0f}~{max(v['model']) * 100:.0f}%)",
               file=sys.stderr)
+        ce = sum(v["calib"]) / n * 100
+        print(f"  확신도 오차  {ce:.1f}%p   "
+              f"(말한 확률과 실제 적중률의 차이. 화면의 % 를 믿을 수 있는지)",
+              file=sys.stderr)
         if m - b < 3.0:
             print("  개선이 3%p 미만이다. 갈아끼울 값어치가 있는지 다시 보라.",
                   file=sys.stderr)
 
-    X = np.array([r["feat"] for r in rows])
-    y = np.array([r["y"] for r in rows])
-    model = LogisticRegression(max_iter=5000, C=args.C).fit(X, y)
+    scaler, model = fit(rows, args.C)
 
     payload = {
         "classes": [LABELS[i] for i in model.classes_.tolist()],
-        "features": FEATURES,
+        "features": CORE_FEATURES,
+        # 운영 쪽에서 (x - mean) / scale 을 먼저 적용해야 한다. 빼먹으면
+        # 계수는 맞는데 확률만 엉뚱하게 나온다.
+        "mean": [round(v, 6) for v in scaler.mean_.tolist()],
+        "scale": [round(v, 6) for v in scaler.scale_.tolist()],
         "coef": [[round(c, 6) for c in row] for row in model.coef_.tolist()],
         "intercept": [round(c, 6) for c in model.intercept_.tolist()],
-        "trained_on": {"games": len(games), "rows": len(rows),
+        "trained_on": {"games": n_games, "rows": len(rows),
                        "from": rows[0]["date"], "to": rows[-1]["date"]},
         "C": args.C,
-        "validation": {"splits": n,
-                       "base": round(sum(v["base"]) / n * 100, 1) if n else None,
-                       "model": round(sum(v["model"]) / n * 100, 1) if n else None},
+        "validation": {
+            "splits": n,
+            "base": round(sum(v["base"]) / n * 100, 1) if n else None,
+            "model": round(sum(v["model"]) / n * 100, 1) if n else None,
+            "calib_error": round(sum(v["calib"]) / n * 100, 1) if n else None,
+        },
     }
 
     if args.emit:
