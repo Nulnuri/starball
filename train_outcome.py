@@ -72,7 +72,7 @@ FEATURES = [
 CORE_FEATURES = ["home", "my_win", "op_win",
                  "my_sp_era", "op_sp_era", "off_edge", "def_edge",
                  "my_sp_recent", "op_sp_recent",
-                 "h2h_win", "my_form10"]
+                 "h2h_win", "my_form10", "op_form10"]
 
 MIN_TEAM_GAMES = 15      # 팀 누적이 이만큼 쌓인 뒤부터 학습에 쓴다
 MIN_SP_IP = 20.0         # 선발 누적 이닝 하한

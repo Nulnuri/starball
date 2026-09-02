@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-02T17:06:54+09:00",
+ "generated": "2026-09-02T17:27:09+09:00",
  "game": {
   "date": "2026-09-02",
   "time": "18:30",
@@ -19,11 +19,11 @@
     "base": 50.9,
     "gain": 2.3
    },
-   "prob": 0.6503,
+   "prob": 0.6508,
    "options": [
     {
      "label": "승",
-     "prob": 0.3359
+     "prob": 0.3354
     },
     {
      "label": "무",
@@ -31,11 +31,11 @@
     },
     {
      "label": "패",
-     "prob": 0.6503
+     "prob": 0.6508
     }
    ],
    "confidence": "매우 높음",
-   "tierAccuracy": 82.3,
+   "tierAccuracy": 84.4,
    "model": "learned"
   },
   {
@@ -132,7 +132,7 @@
   }
  ],
  "joint": {
-  "prob": 0.0719,
+  "prob": 0.072,
   "baseline": 0.0637,
   "confidence": "낮음",
   "outcomeModel": "learned"
@@ -218,12 +218,12 @@
  "starballs": 1,
  "goal": 7,
  "outcomeSkill": {
-  "overall": 56.0,
+  "overall": 57.5,
   "validation": {
    "splits": 7,
    "base": 48.6,
-   "model": 56.3,
-   "calib_error": 2.4
+   "model": 58.1,
+   "calib_error": 3.5
   }
  }
 }

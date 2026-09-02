@@ -42,8 +42,12 @@ TOP_BUCKET = 5
 LABELS = [f"{k}개" for k in range(TOP_BUCKET)] + [f"{TOP_BUCKET}개 이상"]
 
 
-def hr_rows(games: list) -> list:
-    """홈런 학습용 표본. 특징은 승패 모델과 같은 featurize 를 쓴다."""
+def hr_rows(games: list, prior=None) -> list:
+    """홈런 학습용 표본. 특징은 승패 모델과 같은 featurize 를 쓴다.
+
+    사전값(작년 최종 성적)을 반드시 함께 넘긴다. 안 넘기면 개막 3주가
+    표본에서 빠지고, 승패 모델과 특징 정의가 갈린다 — 실제로 그런 상태였다.
+    """
     st = T.new_state()
     out = []
     for x in sorted(games, key=lambda g: g.get("date", "")):
@@ -69,7 +73,7 @@ def hr_rows(games: list) -> list:
                 continue
             f = T.featurize(st, x.get(me), x.get(foe), is_home,
                             x.get("stadium", ""), ms.get("pcode"),
-                            os_.get("pcode"), date, strict=True)
+                            os_.get("pcode"), date, strict=True, prior=prior)
             if f is None:
                 continue
             out.append({"date": date, "team": x.get(me),
@@ -124,7 +128,12 @@ def main() -> int:
     rows = []
     for y in (2024, 2025, 2026):
         try:
-            rows += hr_rows(T.load(f"gamelog_{y}.json"))
+            prior = None
+            try:
+                prior = T.state_through(T.load(f"gamelog_{y - 1}.json"))
+            except FileNotFoundError:
+                pass
+            rows += hr_rows(T.load(f"gamelog_{y}.json"), prior=prior)
         except FileNotFoundError:
             print(f"gamelog_{y}.json 없음", file=sys.stderr)
     rows.sort(key=lambda r: (r["season"], r["date"]))
