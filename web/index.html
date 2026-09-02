@@ -108,6 +108,16 @@
            min-height: 34px; flex: 0 0 auto; }
   .notif a { color: var(--accent); }
 
+  /* 계산 시각 */
+  .stamp { display: flex; align-items: center; gap: 5px; color: var(--ink-faint);
+           margin: -4px 0 2px; }
+
+  /* 확신도 배지 */
+  .conf { display: inline-flex; align-items: center; align-self: flex-start;
+          font-size: 10px; line-height: 1.4; padding: 2px 6px; border-radius: 3px;
+          background: var(--surface-2); color: var(--ink-dim); margin-top: 2px; }
+  .conf.hi { background: #16321F; color: var(--ok); }
+
   .hidden { display: none !important; }
   svg { flex: 0 0 auto; }
 </style>
@@ -160,6 +170,39 @@ function render() {
 }
 
 /* ── 오늘 ─────────────────────────────────────────────── */
+
+// 계산 시각. 이게 안 보이면 매번 같은 값을 박아둔 것처럼 보인다.
+function stampRow() {
+  const t = D && D.generated;
+  if (!t) return "";
+  const d = new Date(t);
+  if (isNaN(d)) return "";
+  const when = `${d.getMonth() + 1}월 ${d.getDate()}일 `
+    + `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const skill = D.outcomeSkill && D.outcomeSkill.validation;
+  const learned = (D.missions || []).some(m => m.model === "learned");
+  const note = learned && skill
+    ? ` · 학습 모델 (과거 ${skill.model}% 적중)`
+    : "";
+  const min = Math.round((Date.now() - d.getTime()) / 60000);
+  const ago = min < 1 ? "방금" : min < 60 ? `${min}분 전`
+            : min < 1440 ? `${Math.floor(min / 60)}시간 전` : `${Math.floor(min / 1440)}일 전`;
+  return `<div class="stamp tiny">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/>
+      <path d="M12 7v5l3 2"/></svg>
+    <span>${when} 계산 (${ago})${note}</span></div>`;
+}
+
+// 확신도 배지. 문턱과 적중률은 학습 때 실측으로 잰 값이다.
+// '높은 날' 이 실제로 더 잘 맞는다는 걸 숫자로 같이 보여준다.
+function confBadge(m) {
+  if (!m.confidence) return "";
+  const strong = m.confidence === "매우 높음" || m.confidence === "높음";
+  const acc = m.tierAccuracy ? ` · 이런 날 과거 ${m.tierAccuracy}%` : "";
+  return `<span class="conf ${strong ? "hi" : ""}">확신도 ${esc(m.confidence)}${acc}</span>`;
+}
+
 function viewToday() {
   if (!D) return empty("오늘은 LG 경기가 없습니다", "경기가 있는 날 아침에 갱신됩니다.");
   const g = D.game, j = D.joint;
@@ -171,6 +214,7 @@ function viewToday() {
     <span class="eyebrow ko">스타볼 예측기</span>
     <span class="small muted num">${esc(g.date.slice(5).replace("-", "월 "))}일</span>
   </div>
+  ${stampRow()}
 
   <div class="card pad col" style="gap:10px">
     <div class="row">
@@ -192,6 +236,7 @@ function viewToday() {
         <div class="col" style="gap:3px">
           <span class="tag">MISSION ${m.n}</span>
           <span class="small muted">${esc(m.label)}</span>
+          ${confBadge(m)}
         </div>
         <div style="display:flex;align-items:baseline;gap:12px">
           <span class="pick">${esc(m.pick)}</span>
