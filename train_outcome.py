@@ -1,0 +1,246 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""승패 문항을 로지스틱 회귀로 학습해 계수를 뽑는다.
+
+왜 승패만인가
+    세 미션 중 데이터가 통하는 건 승패뿐이다. 득실 차는 576경기에서 가장 흔한
+    값(1점)이 23.1%이고 예측값과 실제값의 상관이 r=+0.017 — 사실상 0이다.
+    홈런도 어떤 조건에서도 0개가 최빈이다. 이 두 문항에 학습을 붙이면 오히려
+    나빠진다(실측: 전부적중 4.46% → 2.97%).
+
+왜 로지스틱인가
+    부스팅(GBM)도 해봤지만 표본이 수백 건이라 과적합했다. 7개 시점으로 나눠
+    검증한 결과 로지스틱 57.3%, GBM 51.4%, 그냥 찍기 48.6%. 데이터가 적을
+    때는 단순한 모델이 이긴다. 표본이 2~3시즌으로 늘면 부스팅을 다시 시도할
+    만하다 — 그때 이 스크립트로 두 방식을 다시 비교한다.
+
+쓰는 법
+    python train_outcome.py                         학습 + 검증 + 계수 출력
+    python train_outcome.py --emit                  코드에 붙일 형태로 출력
+    python train_outcome.py --log gamelog_2026.json gamelog_2027.json
+
+시즌이 끝나면 이걸 돌려 나온 계수를 starball_predictor.py 에 붙여넣는다.
+학습에는 scikit-learn 이 필요하지만 매일 도는 파이프라인에는 계수(숫자)만
+들어가므로, 운영 의존성은 늘지 않는다.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from collections import Counter, defaultdict
+
+PARK = {"창원": 1.421, "대구": 1.324, "문학": 1.283, "광주": 1.078,
+        "대전": 0.861, "고척": 0.837, "사직": 0.781, "수원": 0.749,
+        "잠실": 0.665}
+
+# 특징 이름. 순서가 계수 순서와 같아야 한다 — 바꾸면 예측이 조용히 틀린다.
+FEATURES = [
+    "home",                                          # 홈 경기인가
+    "park",                                          # 구장 홈런 팩터
+    "my_rs", "my_ra", "my_hr", "my_hra", "my_win",   # 우리 팀 시점 누적
+    "op_rs", "op_ra", "op_hr", "op_hra", "op_win",   # 상대 팀
+    "my_sp_era", "my_sp_hr9", "my_sp_ip",            # 우리 선발
+    "op_sp_era", "op_sp_hr9", "op_sp_ip",            # 상대 선발
+    "off_edge",                                      # 우리 타선 - 상대 실점
+    "def_edge",                                      # 상대 타선 - 우리 실점
+    "sp_edge",                                       # 상대 선발 ERA - 우리 선발 ERA
+]
+
+MIN_TEAM_GAMES = 15      # 팀 누적이 이만큼 쌓인 뒤부터 학습에 쓴다
+MIN_SP_IP = 20.0         # 선발 누적 이닝 하한
+LABELS = ["승", "무", "패"]
+
+
+def load(path: str) -> list:
+    with open(path, encoding="utf-8") as f:
+        d = json.load(f)
+    games = d.get("games", d) if isinstance(d, dict) else d
+    return sorted(games, key=lambda g: g.get("date", ""))
+
+
+def build_rows(games: list) -> list:
+    """경기를 팀-경기 표본으로 펼치고, 그 시점까지의 누적만 특징으로 쓴다.
+
+    미래 정보가 새어들면 검증 성적이 부풀어 실제로는 안 맞는다. 그래서 누적
+    갱신은 반드시 특징을 만든 뒤에 한다.
+    """
+    team = defaultdict(lambda: {"g": 0, "rs": 0, "ra": 0, "hr": 0, "hra": 0, "w": 0})
+    pit = defaultdict(lambda: {"ip": 0.0, "er": 0, "hr": 0, "n": 0})
+    rows = []
+
+    for x in games:
+        hs, as_ = x.get("home_score"), x.get("away_score")
+        if hs is None or as_ is None:
+            continue
+        box = x.get("box") or {}
+        pitchers = x.get("pitchers") or {}
+
+        def starter(side):
+            for p in (pitchers.get(side) or []):
+                if p.get("started"):
+                    return p
+            return None
+
+        tsnap = {t: dict(v) for t, v in team.items()}
+        psnap = {k: dict(v) for k, v in pit.items()}
+
+        for me, foe, is_home in (("home", "away", True), ("away", "home", False)):
+            tm, op = x.get(me), x.get(foe)
+            my, oy = (hs, as_) if is_home else (as_, hs)
+            a, o = tsnap.get(tm), tsnap.get(op)
+            ms, os_ = starter(me), starter(foe)
+            if not (a and o and ms and os_):
+                continue
+            if a["g"] < MIN_TEAM_GAMES or o["g"] < MIN_TEAM_GAMES:
+                continue
+            pm, po = psnap.get(ms.get("pcode")), psnap.get(os_.get("pcode"))
+            if not (pm and po) or pm["ip"] < MIN_SP_IP or po["ip"] < MIN_SP_IP:
+                continue
+
+            f = [
+                1.0 if is_home else 0.0,
+                PARK.get(x.get("stadium", ""), 1.0),
+                a["rs"] / a["g"], a["ra"] / a["g"], a["hr"] / a["g"],
+                a["hra"] / a["g"], a["w"] / a["g"],
+                o["rs"] / o["g"], o["ra"] / o["g"], o["hr"] / o["g"],
+                o["hra"] / o["g"], o["w"] / o["g"],
+                pm["er"] * 9 / pm["ip"], pm["hr"] * 9 / pm["ip"],
+                pm["ip"] / max(pm["n"], 1),
+                po["er"] * 9 / po["ip"], po["hr"] * 9 / po["ip"],
+                po["ip"] / max(po["n"], 1),
+                a["rs"] / a["g"] - o["ra"] / o["g"],
+                o["rs"] / o["g"] - a["ra"] / a["g"],
+                po["er"] * 9 / po["ip"] - pm["er"] * 9 / pm["ip"],
+            ]
+            if len(f) != len(FEATURES):
+                raise SystemExit(f"특징 개수 불일치 {len(f)} != {len(FEATURES)}")
+            rows.append({"date": x.get("date", ""), "team": tm, "feat": f,
+                         "y": 0 if my > oy else (2 if my < oy else 1)})
+
+        # 특징을 다 만든 뒤에 누적을 갱신한다 (미래 정보 차단)
+        for me, foe, is_home in (("home", "away", True), ("away", "home", False)):
+            tm = x.get(me)
+            my, oy = (hs, as_) if is_home else (as_, hs)
+            r = team[tm]
+            r["g"] += 1
+            r["rs"] += my
+            r["ra"] += oy
+            r["hr"] += int((box.get(foe) or {}).get("hr_allowed") or 0)
+            r["hra"] += int((box.get(me) or {}).get("hr_allowed") or 0)
+            r["w"] += 1 if my > oy else 0
+            for p in (pitchers.get(me) or []):
+                q = pit[p.get("pcode")]
+                q["ip"] += p.get("ip") or 0
+                q["er"] += p.get("er") or 0
+                q["hr"] += p.get("hr") or 0
+                if p.get("started"):
+                    q["n"] += 1
+    return rows
+
+
+def validate(rows: list, C: float) -> dict:
+    """분할 지점을 옮겨가며 반복 검증한다.
+
+    한 번만 자르면 그 구간의 운이 성적으로 잡힌다. 시간순이므로 항상 과거로
+    학습해 미래를 맞힌다.
+    """
+    import numpy as np
+    from sklearn.linear_model import LogisticRegression
+
+    out = {"base": [], "model": []}
+    for frac in (0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8):
+        cut = int(len(rows) * frac)
+        tr, te = rows[:cut], rows[cut:]
+        if len(te) < 60:
+            continue
+        Xtr = np.array([r["feat"] for r in tr])
+        Xte = np.array([r["feat"] for r in te])
+        ytr = np.array([r["y"] for r in tr])
+        yte = np.array([r["y"] for r in te])
+        base = Counter(ytr).most_common(1)[0][0]
+        out["base"].append(float((yte == base).mean()))
+        m = LogisticRegression(max_iter=5000, C=C).fit(Xtr, ytr)
+        out["model"].append(float((m.predict(Xte) == yte).mean()))
+    return out
+
+
+def main() -> int:
+    for s in (sys.stdout, sys.stderr):
+        try:
+            s.reconfigure(encoding="utf-8", errors="replace")
+        except AttributeError:
+            pass
+
+    ap = argparse.ArgumentParser(description="승패 문항 학습")
+    ap.add_argument("--log", nargs="*", default=["gamelog_2026.json"],
+                    help="경기 로그. 여러 시즌을 함께 줄 수 있다")
+    ap.add_argument("--C", type=float, default=0.2,
+                    help="정규화 세기(작을수록 강하게 억제)")
+    ap.add_argument("--emit", action="store_true", help="코드에 붙일 형태로 출력")
+    args = ap.parse_args()
+
+    games = []
+    for p in args.log:
+        try:
+            games += load(p)
+        except FileNotFoundError:
+            print(f"{p} 없음 — 건너뜀", file=sys.stderr)
+    games.sort(key=lambda g: g.get("date", ""))
+    if not games:
+        raise SystemExit("경기 로그가 없습니다. build_gamelog.py 를 먼저 돌리세요.")
+
+    rows = build_rows(games)
+    if not rows:
+        raise SystemExit("학습 표본이 없습니다.")
+    print(f"경기 {len(games)}건 → 학습 표본 {len(rows)}건 "
+          f"({rows[0]['date']} ~ {rows[-1]['date']})", file=sys.stderr)
+    if len(rows) < 300:
+        print("표본이 300건 미만이다. 계수를 갈아끼우기엔 이르다.", file=sys.stderr)
+
+    try:
+        import numpy as np
+        from sklearn.linear_model import LogisticRegression
+    except ImportError:
+        raise SystemExit("scikit-learn 이 필요합니다:  pip install scikit-learn")
+
+    v = validate(rows, args.C)
+    n = len(v["base"])
+    if n:
+        b = sum(v["base"]) / n * 100
+        m = sum(v["model"]) / n * 100
+        print(f"\n반복 검증 {n}회 (과거로 학습 → 미래 맞히기)", file=sys.stderr)
+        print(f"  그냥 찍기   {b:.1f}%", file=sys.stderr)
+        print(f"  이 모델     {m:.1f}%   개선 {m - b:+.1f}%p "
+              f"(범위 {min(v['model']) * 100:.0f}~{max(v['model']) * 100:.0f}%)",
+              file=sys.stderr)
+        if m - b < 3.0:
+            print("  개선이 3%p 미만이다. 갈아끼울 값어치가 있는지 다시 보라.",
+                  file=sys.stderr)
+
+    X = np.array([r["feat"] for r in rows])
+    y = np.array([r["y"] for r in rows])
+    model = LogisticRegression(max_iter=5000, C=args.C).fit(X, y)
+
+    payload = {
+        "classes": [LABELS[i] for i in model.classes_.tolist()],
+        "features": FEATURES,
+        "coef": [[round(c, 6) for c in row] for row in model.coef_.tolist()],
+        "intercept": [round(c, 6) for c in model.intercept_.tolist()],
+        "trained_on": {"games": len(games), "rows": len(rows),
+                       "from": rows[0]["date"], "to": rows[-1]["date"]},
+        "C": args.C,
+        "validation": {"splits": n,
+                       "base": round(sum(v["base"]) / n * 100, 1) if n else None,
+                       "model": round(sum(v["model"]) / n * 100, 1) if n else None},
+    }
+
+    if args.emit:
+        print("OUTCOME_MODEL = " + json.dumps(payload, ensure_ascii=False, indent=4))
+    else:
+        print(json.dumps(payload, ensure_ascii=False, indent=1))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
