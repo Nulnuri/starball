@@ -1494,6 +1494,131 @@ def predict(ctx: GameContext, n_sim: int = N_SIM, seed: int = SEED,
     )
 
 
+def use_learned_models(ctx: GameContext, pred: Prediction) -> None:
+    """학습 모델이 있는 문항을 그 값으로 갈아끼운다.
+
+    승패와 홈런에만 붙인다. 득실 차는 실제 기록을 어느 축으로 나눠 봐도
+    1점이 최빈이라(기대 총득점·전력 격차 모두) 고정이 최적이고, 학습을
+    붙이면 오히려 나빠진다.
+    """
+    use_learned_outcome(ctx, pred)
+    use_learned_hr(ctx, pred)
+
+
+def _live_context(ctx: GameContext):
+    """운영에서 특징을 만들 재료. 없으면 None."""
+    try:
+        import outcome_infer as OI
+    except ImportError:
+        return None
+    try:
+        games = OI.T.load(f"gamelog_{str(ctx.game_date)[:4]}.json")
+    except (FileNotFoundError, ValueError):
+        return None
+    lg, opp = ctx.lg, ctx.opp
+    pcode = lambda side: getattr(getattr(side, "starter", None), "pcode", None)
+    return (OI, games, dict(tm=lg.code, op=opp.code,
+                            is_home=getattr(ctx.home, "code", "") == lg.code,
+                            stadium=ctx.stadium, my_sp=pcode(lg),
+                            op_sp=pcode(opp), date=str(ctx.game_date)))
+
+
+def use_learned_hr(ctx: GameContext, pred: Prediction) -> bool:
+    """홈런 확률을 학습 모델 값으로 갈아끼운다.
+
+    이걸 넣기 전에는 96경기 전부 0개를 골랐다. 실제 기록에서는 기대 홈런이
+    0.9 를 넘는 구간(전체의 3분의 1)에서 1개가 최빈이라, 매치업에 따라
+    답이 달라져야 한다.
+    """
+    got = _live_context(ctx)
+    if not got:
+        return False
+    OI, games, kw = got
+    model = OI.load_hr_model()
+    if not model:
+        return False
+    out = OI.predict_hr(model, games, **kw)
+    if not out:
+        return False
+
+    cur = pred.probs.get("lg_hr") or {}
+    fresh = {k: out[k] for k in cur if k in out}
+    # 앱 선택지와 모델 구간이 다르면 손대지 않는다. 억지로 맞추면
+    # '5개 이상' 확률이 '5개' 자리에 들어가 조용히 틀린다.
+    if set(fresh) != set(cur) or not fresh:
+        print(f"홈런 선택지가 모델과 다릅니다({sorted(cur)} vs {sorted(out)}) "
+              f"— 옛 모델 값을 씁니다", file=sys.stderr)
+        return False
+
+    before = max(cur, key=cur.get)
+    pred.probs["lg_hr"] = fresh
+    after = max(fresh, key=fresh.get)
+    pred.drivers.append(
+        f"홈런은 학습 모델 값이다 (실측 {model['validation']['model']}% vs "
+        f"항상 {model['validation']['fixed_label']} {model['validation']['fixed']}%)")
+    if before != after:
+        print(f"홈런 추천이 바뀜: {before} → {after} "
+              f"({cur[before] * 100:.1f}% → {fresh[after] * 100:.1f}%)",
+              file=sys.stderr)
+    return True
+
+
+def use_learned_outcome(ctx: GameContext, pred: Prediction) -> bool:
+    """승패 확률을 학습 모델 값으로 갈아끼운다. 성공하면 True.
+
+    세 문항 중 데이터가 통하는 건 승패뿐이다 — 득실 차·홈런은 어떤 조건에서도
+    최빈값이 바뀌지 않는다(96경기 전부 1점/0개였다). 그래서 승패만 바꾼다.
+
+    계수 파일이 없거나 특징을 못 만들면 아무것도 하지 않는다. 옛 모델 값이
+    그대로 남는 쪽이, 조용히 틀린 값을 내는 것보다 낫다.
+    """
+    try:
+        import outcome_infer as OI
+    except ImportError:
+        return False
+    model = OI.load_model()
+    if not model:
+        return False
+    try:
+        games = OI.T.load(f"gamelog_{str(ctx.game_date)[:4]}.json")
+    except (FileNotFoundError, ValueError):
+        print("경기 로그가 없어 승패 학습 모델을 건너뜁니다", file=sys.stderr)
+        return False
+
+    lg, opp = ctx.lg, ctx.opp
+    pcode = lambda side: getattr(getattr(side, "starter", None), "pcode", None)
+    out = OI.predict_outcome(model, games, lg.code, opp.code,
+                             getattr(ctx.home, "code", "") == lg.code,
+                             ctx.stadium, pcode(lg), pcode(opp),
+                             str(ctx.game_date))
+    if not out:
+        print("승패 특징을 만들 수 없어 옛 모델 값을 씁니다", file=sys.stderr)
+        return False
+
+    cur = pred.probs.get("outcome") or {}
+    fresh = {k: out[k] for k in cur if k in out}
+    if len(fresh) != len(cur) or not fresh:
+        return False
+
+    before = max(cur, key=cur.get) if cur else None
+    pred.probs["outcome"] = fresh
+    pred.p_win, pred.p_draw, pred.p_lose = (fresh.get("승", 0.0),
+                                            fresh.get("무", 0.0),
+                                            fresh.get("패", 0.0))
+    after = max(fresh, key=fresh.get)
+    tier = out.get("confidence")
+    acc = out.get("tierAccuracy")
+    pred.drivers.append(
+        f"승패는 학습 모델 값이다 (2024~2026 {model['trained_on']['rows']}표본, "
+        f"실측 {model['validation']['model']}%). 확신도 {tier}"
+        + (f", 이 등급의 과거 적중률 {acc}%" if acc else ""))
+    if before and before != after:
+        print(f"승패 추천이 바뀜: {before} → {after} "
+              f"({cur[before] * 100:.1f}% → {fresh[after] * 100:.1f}%)",
+              file=sys.stderr)
+    return True
+
+
 def to_starball_choices(pred: Prediction) -> list:
     """문항 정의 + 예측 확률 → 추천 선택지.
 
@@ -1974,6 +2099,10 @@ def main(argv=None) -> int:
             print(f"스냅샷 저장 → {args.save_fixture}", file=sys.stderr)
 
     pred = predict(ctx, n_sim=args.sims)
+    # 승패는 학습 모델이 있으면 그 값을 쓴다. 여기서 갈아끼우면 이후의
+    # 추천·조합·알림 문구가 전부 같은 값을 쓴다 — 한때 웹앱은 학습 모델,
+    # ntfy 는 옛 모델을 써서 두 채널이 다른 답을 보냈다.
+    use_learned_models(ctx, pred)
     picks = to_starball_choices(pred)
 
     if args.json:

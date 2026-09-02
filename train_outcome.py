@@ -113,141 +113,191 @@ def pyth(rs: float, ra: float) -> float:
     return a / (a + b) if a + b else 0.5
 
 
+def new_state() -> dict:
+    """누적 상태. 학습과 운영이 같은 그릇을 쓴다."""
+    return {
+        "team": defaultdict(lambda: {"g": 0, "rs": 0, "ra": 0, "hr": 0,
+                                     "hra": 0, "w": 0, "last": None,
+                                     "recent": []}),
+        "pit": defaultdict(lambda: {"ip": 0.0, "er": 0, "hr": 0, "n": 0,
+                                    "recent": []}),
+        "bp": defaultdict(lambda: {"ip": 0.0, "er": 0}),
+        "h2h": defaultdict(lambda: [0, 0]),
+    }
+
+
+def feed(state: dict, game: dict) -> None:
+    """끝난 경기 하나를 누적에 반영한다."""
+    hs, as_ = game.get("home_score"), game.get("away_score")
+    if hs is None or as_ is None:
+        return
+    box = game.get("box") or {}
+    pitchers = game.get("pitchers") or {}
+    date = game.get("date", "")
+    for me, foe, is_home in (("home", "away", True), ("away", "home", False)):
+        tm, op = game.get(me), game.get(foe)
+        my, oy = (hs, as_) if is_home else (as_, hs)
+        r = state["team"][tm]
+        r["g"] += 1
+        r["rs"] += my
+        r["ra"] += oy
+        r["hr"] += int((box.get(foe) or {}).get("hr_allowed") or 0)
+        r["hra"] += int((box.get(me) or {}).get("hr_allowed") or 0)
+        won = 1 if my > oy else 0
+        r["w"] += won
+        r["recent"].append(won)
+        r["last"] = date
+        state["h2h"][(tm, op)][0] += won
+        state["h2h"][(tm, op)][1] += 1
+        for pp in (pitchers.get(me) or []):
+            ip = pp.get("ip") or 0
+            er = pp.get("er") or 0
+            if pp.get("started"):
+                q = state["pit"][pp.get("pcode")]
+                q["ip"] += ip
+                q["er"] += er
+                q["hr"] += pp.get("hr") or 0
+                q["n"] += 1
+                q["recent"].append((ip, er))
+            else:
+                state["bp"][tm]["ip"] += ip
+                state["bp"][tm]["er"] += er
+
+
+def _era(rec: dict, floor: float = 1.0) -> float:
+    return rec["er"] * 9 / rec["ip"] if rec["ip"] >= floor else 4.5
+
+
+def _recent_era(rec: dict) -> float:
+    r = rec.get("recent") or []
+    ip = sum(v[0] for v in r[-3:])
+    er = sum(v[1] for v in r[-3:])
+    return er * 9 / ip if ip >= 5 else _era(rec)
+
+
+def _days(prev, date: str) -> float:
+    if not prev:
+        return 1.0
+    try:
+        from datetime import date as D
+        return float(min((D.fromisoformat(date) - D.fromisoformat(prev)).days, 7))
+    except ValueError:
+        return 1.0
+
+
+def featurize(state: dict, tm: str, op: str, is_home: bool, stadium: str,
+              my_sp: str, op_sp: str, date: str,
+              strict: bool = True) -> dict | None:
+    """특징 한 벌을 만든다. **학습과 운영이 반드시 이 함수를 함께 쓴다.**
+
+    학습은 gamelog 로 누적을 쌓아 이 함수를 부르고, 운영도 같은 gamelog 로
+    같은 함수를 부른다. 두 곳에 따로 계산을 두면 값이 미세하게 달라지고,
+    그러면 에러 없이 예측만 틀린다 — 머신러닝에서 가장 잡기 어려운 사고다.
+
+    strict=True 면 누적이 얕을 때 None 을 준다(학습용). 운영에서는 값이
+    없더라도 답을 내야 하므로 strict=False 로 부르고, 얕으면 리그 평균으로
+    채운다.
+    """
+    a = state["team"].get(tm)
+    o = state["team"].get(op)
+    if not a or not o or not a["g"] or not o["g"]:
+        return None
+    if strict and (a["g"] < MIN_TEAM_GAMES or o["g"] < MIN_TEAM_GAMES):
+        return None
+
+    pm = state["pit"].get(my_sp)
+    po = state["pit"].get(op_sp)
+    if strict and (not pm or not po
+                   or pm["ip"] < MIN_SP_IP or po["ip"] < MIN_SP_IP):
+        return None
+    pm = pm or {"ip": 0.0, "er": 0, "hr": 0, "n": 0, "recent": []}
+    po = po or {"ip": 0.0, "er": 0, "hr": 0, "n": 0, "recent": []}
+
+    ab = state["bp"].get(tm, {"ip": 0.0, "er": 0})
+    ob = state["bp"].get(op, {"ip": 0.0, "er": 0})
+    hh = state["h2h"].get((tm, op), [0, 0])
+
+    def sp_ip(rec):
+        return rec["ip"] / max(rec["n"], 1) if rec["n"] else 5.0
+
+    def sp_hr9(rec):
+        return rec["hr"] * 9 / rec["ip"] if rec["ip"] >= 1.0 else 0.94
+
+    return {
+        "home": 1.0 if is_home else 0.0,
+        "park": PARK.get(stadium, 1.0),
+        "my_rs": a["rs"] / a["g"], "my_ra": a["ra"] / a["g"],
+        "my_hr": a["hr"] / a["g"], "my_hra": a["hra"] / a["g"],
+        "my_win": a["w"] / a["g"],
+        "op_rs": o["rs"] / o["g"], "op_ra": o["ra"] / o["g"],
+        "op_hr": o["hr"] / o["g"], "op_hra": o["hra"] / o["g"],
+        "op_win": o["w"] / o["g"],
+        "my_sp_era": _era(pm), "my_sp_hr9": sp_hr9(pm), "my_sp_ip": sp_ip(pm),
+        "op_sp_era": _era(po), "op_sp_hr9": sp_hr9(po), "op_sp_ip": sp_ip(po),
+        "off_edge": a["rs"] / a["g"] - o["ra"] / o["g"],
+        "def_edge": o["rs"] / o["g"] - a["ra"] / a["g"],
+        "sp_edge": _era(po) - _era(pm),
+        "my_bp_era": _era(ab, floor=10.0), "op_bp_era": _era(ob, floor=10.0),
+        "my_form10": (sum(a["recent"][-10:]) / len(a["recent"][-10:])
+                      if a["recent"] else 0.5),
+        "op_form10": (sum(o["recent"][-10:]) / len(o["recent"][-10:])
+                      if o["recent"] else 0.5),
+        "my_pyth": pyth(a["rs"] / a["g"], a["ra"] / a["g"]),
+        "op_pyth": pyth(o["rs"] / o["g"], o["ra"] / o["g"]),
+        "my_rest": _days(a["last"], date), "op_rest": _days(o["last"], date),
+        "h2h_win": hh[0] / hh[1] if hh[1] else 0.5,
+        "my_sp_recent": _recent_era(pm), "op_sp_recent": _recent_era(po),
+        "sp_ip_edge": sp_ip(pm) - sp_ip(po),
+    }
+
+
+def state_through(games: list, before: str | None = None) -> dict:
+    """주어진 날짜 **이전** 경기까지만 누적한다. 운영에서 오늘 특징을 만들 때 쓴다."""
+    st = new_state()
+    for g in sorted(games, key=lambda x: x.get("date", "")):
+        if before and g.get("date", "") >= before:
+            break
+        feed(st, g)
+    return st
+
+
 def build_rows(games: list) -> list:
     """팀-경기 표본을 만든다. 그 시점까지의 누적만 특징으로 쓴다.
 
     미래 정보가 새면 검증 성적만 좋아지고 실제 예측은 틀린다. 누적 갱신은
-    반드시 특징을 다 만든 뒤에 한다.
-
-    특징 생성은 이 함수 하나뿐이다. 두 곳에 두면 반드시 갈린다 —
-    실제로 eval_window 가 21개, 여기가 7개를 쓰던 시기가 있었다.
+    반드시 특징을 다 만든 뒤에 한다(feed 를 나중에 부른다).
     """
-    team = defaultdict(lambda: {"g": 0, "rs": 0, "ra": 0, "hr": 0, "hra": 0,
-                                "w": 0, "last": None, "recent": []})
-    pit = defaultdict(lambda: {"ip": 0.0, "er": 0, "hr": 0, "n": 0, "recent": []})
-    bp = defaultdict(lambda: {"ip": 0.0, "er": 0})
-    h2h = defaultdict(lambda: [0, 0])          # (팀, 상대) → [승, 경기]
+    st = new_state()
     rows = []
-
-    for x in games:
+    for x in sorted(games, key=lambda g: g.get("date", "")):
         hs, as_ = x.get("home_score"), x.get("away_score")
         if hs is None or as_ is None:
             continue
-        box = x.get("box") or {}
-        pitchers = x.get("pitchers") or {}
         date = x.get("date", "")
+        pitchers = x.get("pitchers") or {}
 
         def starter(side):
-            for p in (pitchers.get(side) or []):
-                if p.get("started"):
-                    return p
+            for pp in (pitchers.get(side) or []):
+                if pp.get("started"):
+                    return pp
             return None
 
-        tsnap = {t: dict(v) for t, v in team.items()}
-        psnap = {k: dict(v) for k, v in pit.items()}
-        bsnap = {k: dict(v) for k, v in bp.items()}
-        hsnap = {k: list(v) for k, v in h2h.items()}
-
         for me, foe, is_home in (("home", "away", True), ("away", "home", False)):
-            tm, op = x.get(me), x.get(foe)
-            my, oy = (hs, as_) if is_home else (as_, hs)
-            a, o = tsnap.get(tm), tsnap.get(op)
             ms, os_ = starter(me), starter(foe)
-            if not (a and o and ms and os_):
+            if not ms or not os_:
                 continue
-            if a["g"] < MIN_TEAM_GAMES or o["g"] < MIN_TEAM_GAMES:
+            my, oy = (hs, as_) if is_home else (as_, hs)
+            f = featurize(st, x.get(me), x.get(foe), is_home,
+                          x.get("stadium", ""), ms.get("pcode"),
+                          os_.get("pcode"), date, strict=True)
+            if f is None:
                 continue
-            pm, po = psnap.get(ms.get("pcode")), psnap.get(os_.get("pcode"))
-            if not (pm and po) or pm["ip"] < MIN_SP_IP or po["ip"] < MIN_SP_IP:
-                continue
-
-            ab, ob = bsnap.get(tm, {"ip": 0.0, "er": 0}), bsnap.get(op, {"ip": 0.0, "er": 0})
-
-            def days(prev):
-                if not prev:
-                    return 1.0
-                try:
-                    from datetime import date as D
-                    d1 = D.fromisoformat(prev)
-                    d2 = D.fromisoformat(date)
-                    return float(min((d2 - d1).days, 7))
-                except ValueError:
-                    return 1.0
-
-            def era(rec, ip_key="ip", er_key="er", floor=1.0):
-                return rec[er_key] * 9 / rec[ip_key] if rec[ip_key] >= floor else 4.5
-
-            def recent_era(rec):
-                r = rec.get("recent") or []
-                ip = sum(v[0] for v in r[-3:])
-                er = sum(v[1] for v in r[-3:])
-                return er * 9 / ip if ip >= 5 else era(rec)
-
-            base = {
-                "home": 1.0 if is_home else 0.0,
-                "park": PARK.get(x.get("stadium", ""), 1.0),
-                "my_rs": a["rs"] / a["g"], "my_ra": a["ra"] / a["g"],
-                "my_hr": a["hr"] / a["g"], "my_hra": a["hra"] / a["g"],
-                "my_win": a["w"] / a["g"],
-                "op_rs": o["rs"] / o["g"], "op_ra": o["ra"] / o["g"],
-                "op_hr": o["hr"] / o["g"], "op_hra": o["hra"] / o["g"],
-                "op_win": o["w"] / o["g"],
-                "my_sp_era": era(pm), "my_sp_hr9": pm["hr"] * 9 / pm["ip"],
-                "my_sp_ip": pm["ip"] / max(pm["n"], 1),
-                "op_sp_era": era(po), "op_sp_hr9": po["hr"] * 9 / po["ip"],
-                "op_sp_ip": po["ip"] / max(po["n"], 1),
-                "off_edge": a["rs"] / a["g"] - o["ra"] / o["g"],
-                "def_edge": o["rs"] / o["g"] - a["ra"] / a["g"],
-                "sp_edge": era(po) - era(pm),
-                # ── 후보 ──
-                "my_bp_era": era(ab, floor=10.0), "op_bp_era": era(ob, floor=10.0),
-                "my_form10": (sum(a["recent"][-10:]) / len(a["recent"][-10:])
-                              if a["recent"] else 0.5),
-                "op_form10": (sum(o["recent"][-10:]) / len(o["recent"][-10:])
-                              if o["recent"] else 0.5),
-                "my_pyth": pyth(a["rs"] / a["g"], a["ra"] / a["g"]),
-                "op_pyth": pyth(o["rs"] / o["g"], o["ra"] / o["g"]),
-                "my_rest": days(a["last"]), "op_rest": days(o["last"]),
-                "h2h_win": (hsnap.get((tm, op), [0, 0])[0]
-                            / hsnap[(tm, op)][1] if hsnap.get((tm, op), [0, 0])[1]
-                            else 0.5),
-                "my_sp_recent": recent_era(pm), "op_sp_recent": recent_era(po),
-                "sp_ip_edge": pm["ip"] / max(pm["n"], 1) - po["ip"] / max(po["n"], 1),
-            }
-            feat = [base[n] for n in FEATURES]
-            rows.append({"date": date, "team": tm, "feat": feat,
+            rows.append({"date": date, "team": x.get(me),
+                         "feat": [f[n] for n in FEATURES],
                          "season": int(str(date)[:4] or 0),
                          "y": 0 if my > oy else (2 if my < oy else 1)})
 
-        # 누적 갱신 (특징을 다 만든 뒤에)
-        for me, foe, is_home in (("home", "away", True), ("away", "home", False)):
-            tm = x.get(me)
-            my, oy = (hs, as_) if is_home else (as_, hs)
-            r = team[tm]
-            r["g"] += 1
-            r["rs"] += my
-            r["ra"] += oy
-            r["hr"] += int((box.get(foe) or {}).get("hr_allowed") or 0)
-            r["hra"] += int((box.get(me) or {}).get("hr_allowed") or 0)
-            won = 1 if my > oy else 0
-            r["w"] += won
-            r["recent"].append(won)
-            r["last"] = date
-            h2h[(tm, x.get(foe))][0] += won
-            h2h[(tm, x.get(foe))][1] += 1
-            for p in (pitchers.get(me) or []):
-                ip = p.get("ip") or 0
-                er = p.get("er") or 0
-                if p.get("started"):
-                    q = pit[p.get("pcode")]
-                    q["ip"] += ip
-                    q["er"] += er
-                    q["hr"] += p.get("hr") or 0
-                    q["n"] += 1
-                    q["recent"].append((ip, er))
-                else:
-                    bp[tm]["ip"] += ip
-                    bp[tm]["er"] += er
+        feed(st, x)
     return rows
 
 

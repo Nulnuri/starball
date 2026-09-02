@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-02T14:55:09+09:00",
+ "generated": "2026-09-02T16:35:46+09:00",
  "game": {
   "date": "2026-09-02",
   "time": "18:30",
@@ -13,27 +13,30 @@
    "n": 1,
    "key": "outcome",
    "label": "승패 맞히기",
-   "pick": "승",
+   "pick": "패",
    "skill": {
     "hit": 53.3,
     "base": 50.9,
     "gain": 2.3
    },
-   "prob": 0.4654,
+   "prob": 0.5724,
    "options": [
     {
      "label": "승",
-     "prob": 0.4654
+     "prob": 0.3917
     },
     {
      "label": "무",
-     "prob": 0.0796
+     "prob": 0.036
     },
     {
      "label": "패",
-     "prob": 0.4551
+     "prob": 0.5724
     }
-   ]
+   ],
+   "confidence": "낮음",
+   "tierAccuracy": 62.1,
+   "model": "learned"
   },
   {
    "n": 2,
@@ -129,9 +132,10 @@
   }
  ],
  "joint": {
-  "prob": 0.0517,
+  "prob": 0.0636,
   "baseline": 0.0642,
-  "confidence": "낮음"
+  "confidence": "낮음",
+  "outcomeModel": "learned"
  },
  "score": {
   "lg": 5.2,
@@ -212,5 +216,14 @@
   "김윤식의 두산전 표본은 2.7이닝(3경기)뿐 — 상대 ERA를 크게 축소 적용"
  ],
  "starballs": 1,
- "goal": 7
+ "goal": 7,
+ "outcomeSkill": {
+  "overall": 59.2,
+  "validation": {
+   "splits": 7,
+   "base": 48.6,
+   "model": 59.8,
+   "calib_error": 4.7
+  }
+ }
 }

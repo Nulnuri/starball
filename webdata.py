@@ -60,6 +60,74 @@ def _history() -> dict:
 # 예측 → today.json
 # ─────────────────────────────────────────────────────────────────────────
 
+def apply_outcome_model(today: dict, ctx: "S.GameContext") -> None:
+    """승패 문항을 학습 모델 값으로 갈아끼운다.
+
+    세 문항 중 데이터가 통하는 건 승패뿐이다(득실 차·홈런은 어떤 조건에서도
+    최빈값이 안 바뀐다). 그래서 승패만 학습 모델을 쓰고 나머지는 그대로 둔다.
+
+    계수 파일이 없거나 특징을 못 만들면 아무것도 하지 않는다 — 옛 모델 값이
+    그대로 남는다. 조용히 틀린 값을 내는 것보다 기능이 꺼지는 게 낫다.
+    """
+    try:
+        import outcome_infer as OI
+    except ImportError:
+        return
+    model = OI.load_model()
+    if not model:
+        print("outcome_model.json 없음 — 승패는 옛 모델 값을 쓴다", file=sys.stderr)
+        return
+
+    try:
+        year = str(ctx.game_date)[:4]
+        games = OI.T.load(f"gamelog_{year}.json")
+    except FileNotFoundError:
+        print("경기 로그가 없어 승패 학습 모델을 건너뛴다", file=sys.stderr)
+        return
+
+    lg, opp = ctx.lg, ctx.opp
+    sp = lambda side: getattr(getattr(side, "starter", None), "pcode", None)
+    out = OI.predict_outcome(
+        model, games, lg.code, opp.code, bool(getattr(ctx.home, "code", "") == lg.code),
+        ctx.stadium, sp(lg), sp(opp), str(ctx.game_date))
+    if not out:
+        print("승패 특징을 만들 수 없어 옛 모델 값을 쓴다", file=sys.stderr)
+        return
+
+    m = next((x for x in today.get("missions") or [] if x.get("key") == "outcome"),
+             None)
+    if not m:
+        return
+
+    old_pick, old_prob = m.get("pick"), m.get("prob") or 0.0
+    labels = [o["label"] for o in m.get("options") or []]
+    probs = {k: out[k] for k in labels if k in out}
+    if len(probs) != len(labels) or not probs:
+        return
+
+    pick = max(probs, key=probs.get)
+    m["options"] = [{"label": k, "prob": round(probs[k], 4)} for k in labels]
+    m["pick"] = pick
+    m["prob"] = round(probs[pick], 4)
+    m["confidence"] = out.get("confidence")
+    m["tierAccuracy"] = out.get("tierAccuracy")
+    m["model"] = "learned"
+
+    # 결합 확률은 승패 확률이 바뀐 만큼만 비례로 고친다. 시뮬레이션을 다시
+    # 돌리지 않으므로 정확한 재계산은 아니다 — 그래서 근사임을 표시한다.
+    j = today.get("joint") or {}
+    if old_prob > 0 and j.get("prob"):
+        j["prob"] = round(j["prob"] * m["prob"] / old_prob, 4)
+        j["outcomeModel"] = "learned"
+    today["outcomeSkill"] = {
+        "overall": (model.get("confidence") or {}).get("overall"),
+        "validation": model.get("validation"),
+    }
+    if pick != old_pick:
+        print(f"승패 추천이 바뀜: {old_pick} → {pick} "
+              f"({old_prob * 100:.1f}% → {m['prob'] * 100:.1f}%)", file=sys.stderr)
+
+
 def build_today(ctx: S.GameContext, pred: S.Prediction, picks: list) -> dict:
     """화면이 필요로 하는 것만 담는다. 모델 내부값은 내보내지 않는다."""
     lg, opp = ctx.lg, ctx.opp
@@ -356,6 +424,7 @@ def cmd_predict(day: date) -> int:
     pred = S.predict(ctx)
     picks = S.to_starball_choices(pred)
     today = build_today(ctx, pred, picks)
+    apply_outcome_model(today, ctx)
     _write(TODAY_FILE, today)
     record_prediction(today, pred)
     print(f"web/today.json · {today['game']['lg']} vs {today['game']['opp']} · "
