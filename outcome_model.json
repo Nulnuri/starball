@@ -137,6 +137,29 @@
     "games": 576,
     "accuracy": 57.5
    }
+  ],
+  "targets": [
+   {
+    "target": 70.0,
+    "threshold": 0.5932,
+    "games": 271,
+    "share": 0.1409,
+    "accuracy": 70.1
+   },
+   {
+    "target": 75.0,
+    "threshold": 0.5975,
+    "games": 241,
+    "share": 0.1253,
+    "accuracy": 75.1
+   },
+   {
+    "target": 80.0,
+    "threshold": 0.6133,
+    "games": 171,
+    "share": 0.0889,
+    "accuracy": 80.1
+   }
   ]
  },
  "validation": {

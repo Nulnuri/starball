@@ -117,6 +117,7 @@
           font-size: 10px; line-height: 1.4; padding: 2px 6px; border-radius: 3px;
           background: var(--surface-2); color: var(--ink-dim); margin-top: 2px; }
   .conf.hi { background: #16321F; color: var(--ok); }
+  .conf.band { background: var(--ok); color: #0B1F13; font-weight: 600; }
 
   .hidden { display: none !important; }
   svg { flex: 0 0 auto; }
@@ -198,6 +199,11 @@ function stampRow() {
 // '높은 날' 이 실제로 더 잘 맞는다는 걸 숫자로 같이 보여준다.
 function confBadge(m) {
   if (!m.confidence) return "";
+  // 목표 구간(70/75/80%)에 드는 날은 그것을 앞세운다. 문턱과 실측치는
+  // 학습 때 잰 값이라, 표시한 숫자가 실제로 지켜진 약속이다.
+  if (m.band) {
+    return `<span class="conf band">${m.band}% 구간 · 과거 실측 ${m.bandAccuracy}%</span>`;
+  }
   const strong = m.confidence === "매우 높음" || m.confidence === "높음";
   const acc = m.tierAccuracy ? ` · 이런 날 과거 ${m.tierAccuracy}%` : "";
   return `<span class="conf ${strong ? "hi" : ""}">확신도 ${esc(m.confidence)}${acc}</span>`;

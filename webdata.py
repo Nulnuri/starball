@@ -111,6 +111,10 @@ def apply_outcome_model(today: dict, ctx: "S.GameContext") -> None:
     m["prob"] = round(probs[pick], 4)
     m["confidence"] = out.get("confidence")
     m["tierAccuracy"] = out.get("tierAccuracy")
+    # 목표 구간(70/75/80%)에 드는 날만 표시한다. 없으면 키를 안 넣는다.
+    if out.get("band"):
+        m["band"] = out["band"]
+        m["bandAccuracy"] = out["bandAccuracy"]
     m["model"] = "learned"
 
     # 결합 확률은 승패 확률이 바뀐 만큼만 비례로 고친다. 시뮬레이션을 다시

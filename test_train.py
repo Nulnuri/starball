@@ -122,18 +122,64 @@ def test_home_flag_and_labels():
     assert by["OB"]["y"] == 2
 
 
-def test_park_factor_enters_features():
-    games = _season()
-    games.append(_game("2026-06-03", "LG", "NC", 3, 3, stadium="창원",
-                       away_sp=sp("LG", 0), home_sp=sp("NC", 0)))
-    games.append(_game("2026-06-03", "SS", "KT", 3, 3, stadium="잠실",
-                       away_sp=sp("SS", 0), home_sp=sp("KT", 0)))
-    rows = T.build_rows(games)
-    i = T.FEATURES.index("park")
-    parks = {r["team"]: r["feat"][i] for r in rows if r["date"] == "2026-06-03"}
-    assert "LG" in parks and "SS" in parks, parks
-    assert parks["LG"] > 1.3, parks                  # 창원 1.421
-    assert parks["SS"] < 0.7, parks                  # 잠실 0.665
+def test_park_factor_comes_from_records():
+    """구장 팩터는 하드코딩이 아니라 그 시즌 기록에서 나온다.
+
+    2025 에 대전이 새 구장으로 바뀌었을 때 하드코딩 값(0.861)과 실제
+    기록값(1.07)이 24% 어긋나 있었다. 홈런 모델의 주요 특징이라 그대로
+    두면 시즌 내내 조용히 틀린다.
+    """
+    games = []
+    for i in range(40):
+        d = f"2026-04-{i % 28 + 1:02d}"
+        # 창원은 홈런이 많이 나오고, 잠실은 적게 나오는 기록을 만든다
+        games.append(_game(d, "NC", "HH", 5, 5, stadium="창원",
+                           away_sp=sp("NC", i), home_sp=sp("HH", i),
+                           away_hr_allowed=4, home_hr_allowed=4))
+        games.append(_game(d, "LG", "OB", 3, 3, stadium="잠실",
+                           away_sp=sp("LG", i), home_sp=sp("OB", i),
+                           away_hr_allowed=0, home_hr_allowed=0))
+    f = T.park_hr_factors(games)
+    assert f["창원"] > 1.2, f
+    assert f["잠실"] < 0.8, f
+    # 기록에 없는 구장은 아예 나오지 않는다 (부르는 쪽이 1.0 으로 다룬다)
+    assert "대구" not in f, f
+
+
+def test_new_stadium_starts_neutral():
+    """처음 보는 구장은 1.0 에서 시작한다 — 2027 신규 잠실야구장 대비.
+
+    옛 구장의 팩터를 물려받으면 안 된다. 이름이 같아도(잠실 → 잠실)
+    기록에서 다시 계산하므로, 새 구장은 표본이 쌓일 때까지 중립이다.
+    """
+    games = []
+    for i in range(6):                      # 표본이 얕은 신규 구장
+        games.append(_game(f"2027-03-{i + 20:02d}", "LG", "OB", 4, 4,
+                           stadium="잠실",
+                           away_sp=sp("LG", i), home_sp=sp("OB", i),
+                           away_hr_allowed=3, home_hr_allowed=3))
+    for i in range(40):                     # 리그 평균을 만드는 다른 구장
+        games.append(_game(f"2027-04-{i % 28 + 1:02d}", "SS", "KT", 4, 4,
+                           stadium="대구",
+                           away_sp=sp("SS", i), home_sp=sp("KT", i),
+                           away_hr_allowed=1, home_hr_allowed=1))
+    f = T.park_hr_factors(games)
+    # 실제로는 홈런이 3배 나왔지만 표본이 6경기뿐이라 1.0 쪽에 붙어 있어야 한다
+    assert 0.9 < f["잠실"] < 1.9, f
+    assert f["잠실"] < 3.0, "표본이 얕은데 원시 비율을 그대로 쓰고 있다"
+
+
+def test_park_prior_carries_last_season():
+    """작년 팩터가 있으면 개막 직후에 그쪽에서 시작한다."""
+    games = [_game(f"2027-03-{i + 20:02d}", "LG", "OB", 4, 4, stadium="잠실",
+                   away_sp=sp("LG", i), home_sp=sp("OB", i),
+                   away_hr_allowed=1, home_hr_allowed=1) for i in range(4)]
+    games += [_game(f"2027-04-{i % 28 + 1:02d}", "SS", "KT", 4, 4,
+                    stadium="대구", away_sp=sp("SS", i), home_sp=sp("KT", i),
+                    away_hr_allowed=1, home_hr_allowed=1) for i in range(40)]
+    low = T.park_hr_factors(games, prior={"잠실": 0.6})
+    high = T.park_hr_factors(games, prior={"잠실": 1.4})
+    assert low["잠실"] < high["잠실"], (low, high)
 
 
 def test_draw_is_its_own_label():

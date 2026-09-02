@@ -42,13 +42,15 @@ TOP_BUCKET = 5
 LABELS = [f"{k}개" for k in range(TOP_BUCKET)] + [f"{TOP_BUCKET}개 이상"]
 
 
-def hr_rows(games: list, prior=None) -> list:
+def hr_rows(games: list, prior=None, parks=None) -> list:
     """홈런 학습용 표본. 특징은 승패 모델과 같은 featurize 를 쓴다.
 
     사전값(작년 최종 성적)을 반드시 함께 넘긴다. 안 넘기면 개막 3주가
     표본에서 빠지고, 승패 모델과 특징 정의가 갈린다 — 실제로 그런 상태였다.
     """
     st = T.new_state()
+    if parks is None:
+        parks = T.park_hr_factors(games, prior=(prior or {}).get("parks"))
     out = []
     for x in sorted(games, key=lambda g: g.get("date", "")):
         hs, as_ = x.get("home_score"), x.get("away_score")
@@ -73,7 +75,8 @@ def hr_rows(games: list, prior=None) -> list:
                 continue
             f = T.featurize(st, x.get(me), x.get(foe), is_home,
                             x.get("stadium", ""), ms.get("pcode"),
-                            os_.get("pcode"), date, strict=True, prior=prior)
+                            os_.get("pcode"), date, strict=True, prior=prior,
+                            parks=parks)
             if f is None:
                 continue
             out.append({"date": date, "team": x.get(me),

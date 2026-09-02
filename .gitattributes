@@ -1,0 +1,7 @@
+# 생성 파일들. 워크플로와 로컬이 각각 만들어 커밋하므로 충돌이 잦다.
+# 내용은 언제든 다시 만들 수 있으니, 병합하지 말고 한쪽을 택한다.
+# (로컬에서 `git config merge.ours.driver true` 를 한 번 해두면 동작한다.
+#  HANDOFF 의 '시작하기' 에 적어뒀다.)
+web/today.json    merge=ours
+web/history.json  merge=ours
+gamelog_*.json    merge=ours

@@ -36,9 +36,23 @@ import sys
 from collections import Counter, defaultdict
 from typing import Optional
 
-PARK = {"창원": 1.421, "대구": 1.324, "문학": 1.283, "광주": 1.078,
-        "대전": 0.861, "고척": 0.837, "사직": 0.781, "수원": 0.749,
-        "잠실": 0.665}
+# 구장 홈런 팩터.
+#
+# 하드코딩하지 않는다. 매 시즌 기록에서 계산하고, 표본이 얕으면 작년 값
+# (없으면 리그 평균 1.0) 쪽으로 당긴다.
+#
+# **2027 신규 잠실야구장이 이 경로를 탄다.** 이름이 그대로 '잠실' 로 오면
+# 옛 구장의 0.665 를 그대로 쓰게 되고, 홈런 모델은 구장 팩터가 유일한
+# 특징이라 시즌 내내 조용히 틀린다. 그래서 기록에서 다시 계산해야 한다.
+# 새 구장은 1.0 에서 시작해 경기가 쌓이는 만큼 실제 값으로 옮겨간다.
+#
+# 아래 값은 파일이 없을 때만 쓰는 최후 수단이다(2026 실측).
+PARK_FALLBACK = {"창원": 1.421, "대구": 1.324, "문학": 1.283, "광주": 1.078,
+                 "대전": 0.861, "고척": 0.837, "사직": 0.781, "수원": 0.749,
+                 "잠실": 0.665}
+PARK = dict(PARK_FALLBACK)          # 하위 호환. park_hr_factors() 를 쓸 것
+
+K_PARK = 40.0        # 구장 팩터 축소: 40경기쯤 치르면 그 시즌 값을 절반쯤 믿는다
 
 # 특징 이름. 순서가 계수 순서와 같아야 한다 — 바꾸면 예측이 조용히 틀린다.
 FEATURES = [
@@ -217,6 +231,40 @@ def _prior_pit(prior: Optional[dict], code: str) -> Optional[dict]:
             "ip": q["ip"] / max(q["n"], 1)}
 
 
+def park_hr_factors(games: list, prior: Optional[dict] = None,
+                    k: float = K_PARK) -> dict:
+    """구장별 홈런 팩터를 그 시즌 기록에서 계산한다.
+
+    팩터 = (그 구장 경기당 홈런) / (리그 경기당 홈런). 표본이 얕으면 작년
+    값(없으면 1.0) 쪽으로 당긴다 — 신규 구장은 1.0 에서 시작한다.
+
+    반환에 없는 구장은 부르는 쪽에서 1.0 으로 다룬다. 이름이 처음 보이는
+    구장이면 그게 신규 구장이라는 신호다.
+    """
+    hr, gm = defaultdict(float), defaultdict(float)
+    for x in games:
+        if x.get("home_score") is None:
+            continue
+        box = x.get("box") or {}
+        st = x.get("stadium") or ""
+        if not st:
+            continue
+        both = ((box.get("home") or {}).get("hr_allowed") or 0)             + ((box.get("away") or {}).get("hr_allowed") or 0)
+        hr[st] += both
+        gm[st] += 1
+    total_hr, total_gm = sum(hr.values()), sum(gm.values())
+    if not total_gm:
+        return {}
+    league = total_hr / total_gm
+
+    out = {}
+    for st in gm:
+        base = (prior or {}).get(st, 1.0) * league
+        shrunk = (hr[st] + base * k) / (gm[st] + k)
+        out[st] = round(shrunk / league, 4) if league else 1.0
+    return out
+
+
 def _prior_h2h(prior: Optional[dict], tm: str, op: str) -> float:
     """작년 상대전적 승률. 없으면 0.5."""
     if not prior:
@@ -249,7 +297,8 @@ def _days(prev, date: str) -> float:
 def featurize(state: dict, tm: str, op: str, is_home: bool, stadium: str,
               my_sp: str, op_sp: str, date: str,
               strict: bool = True,
-              prior: Optional[dict] = None) -> dict | None:
+              prior: Optional[dict] = None,
+              parks: Optional[dict] = None) -> dict | None:
     """특징 한 벌을 만든다. **학습과 운영이 반드시 이 함수를 함께 쓴다.**
 
     학습은 gamelog 로 누적을 쌓아 이 함수를 부르고, 운영도 같은 gamelog 로
@@ -325,7 +374,7 @@ def featurize(state: dict, tm: str, op: str, is_home: bool, stadium: str,
 
     return {
         "home": 1.0 if is_home else 0.0,
-        "park": PARK.get(stadium, 1.0),
+        "park": (parks or PARK).get(stadium, 1.0),
         "my_rs": my_rs, "my_ra": my_ra,
         "my_hr": tr(a, pa, "hr"), "my_hra": tr(a, pa, "hra"),
         "my_win": tr(a, pa, "w"),
@@ -362,20 +411,29 @@ def featurize(state: dict, tm: str, op: str, is_home: bool, stadium: str,
 def state_through(games: list, before: str | None = None) -> dict:
     """주어진 날짜 **이전** 경기까지만 누적한다. 운영에서 오늘 특징을 만들 때 쓴다."""
     st = new_state()
+    used = []
     for g in sorted(games, key=lambda x: x.get("date", "")):
         if before and g.get("date", "") >= before:
             break
         feed(st, g)
+        used.append(g)
+    # 사전값으로 쓸 때 작년 구장 팩터도 함께 넘긴다.
+    st["parks"] = park_hr_factors(used)
     return st
 
 
-def build_rows(games: list, prior: Optional[dict] = None) -> list:
+def build_rows(games: list, prior: Optional[dict] = None,
+               parks: Optional[dict] = None) -> list:
     """팀-경기 표본을 만든다. 그 시점까지의 누적만 특징으로 쓴다.
 
     미래 정보가 새면 검증 성적만 좋아지고 실제 예측은 틀린다. 누적 갱신은
     반드시 특징을 다 만든 뒤에 한다(feed 를 나중에 부른다).
     """
     st = new_state()
+    # 그 시즌 기록으로 구장 팩터를 계산한다. 하드코딩 값을 쓰면 신규 구장이
+    # 생긴 해에 시즌 내내 틀린 값을 쓴다.
+    if parks is None:
+        parks = park_hr_factors(games, prior=(prior or {}).get("parks"))
     rows = []
     for x in sorted(games, key=lambda g: g.get("date", "")):
         hs, as_ = x.get("home_score"), x.get("away_score")
@@ -397,7 +455,8 @@ def build_rows(games: list, prior: Optional[dict] = None) -> list:
             my, oy = (hs, as_) if is_home else (as_, hs)
             f = featurize(st, x.get(me), x.get(foe), is_home,
                           x.get("stadium", ""), ms.get("pcode"),
-                          os_.get("pcode"), date, strict=True, prior=prior)
+                          os_.get("pcode"), date, strict=True, prior=prior,
+                          parks=parks)
             if f is None:
                 continue
             rows.append({"date": date, "team": x.get(me),
@@ -516,7 +575,31 @@ def confidence_tiers(rows: list, C: float) -> dict:
         return {}
     p = np.array(probs)
     ok = np.array(hits)
-    out = {"n": len(p), "overall": round(float(ok.mean()) * 100, 1), "tiers": []}
+    out = {"n": len(p), "overall": round(float(ok.mean()) * 100, 1), "tiers": [],
+           "targets": []}
+
+    # 목표 적중률을 실제로 넘는 확신도 문턱을 찾는다.
+    #
+    # "무조건 70% 이상" 은 매 경기로는 불가능하다 — 시즌 최종 순위를 미리
+    # 아는 반칙 오라클도 59.2% 이고, 리그 1위가 최하위를 만나도 77.9% 다.
+    # 대신 **어느 날이 70% 구간인지** 는 말할 수 있다. 문턱을 넘는 날에만
+    # '70% 이상' 이라고 표시하면 그 약속은 실제로 지켜진다.
+    order = np.argsort(-p)
+    for target in (70.0, 75.0, 80.0):
+        found = None
+        # 확신도가 높은 순으로 늘려가며, 그 집합의 적중률이 목표를 넘는
+        # 가장 넓은 구간을 찾는다. 표본이 40건은 되어야 믿는다.
+        for m in range(len(order), 39, -1):
+            idx = order[:m]
+            if float(ok[idx].mean()) * 100 >= target:
+                found = {"target": target,
+                         "threshold": round(float(p[idx].min()), 4),
+                         "games": m,
+                         "share": round(m / len(p), 4),
+                         "accuracy": round(float(ok[idx].mean()) * 100, 1)}
+                break
+        if found:
+            out["targets"].append(found)
     for share in (0.05, 0.10, 0.15, 0.20, 0.30):
         n = max(20, int(len(p) * share))
         idx = np.argsort(-p)[:n]
@@ -672,6 +755,15 @@ def main() -> int:
                   f"{t['games']:>3}경기)  적중 {t['accuracy']:>5.1f}%", file=sys.stderr)
         print(f"  전체                                        "
               f"적중 {ct['overall']:>5.1f}%", file=sys.stderr)
+    if ct.get("targets"):
+        print("", file=sys.stderr)
+        print("목표 적중률을 실제로 넘는 구간", file=sys.stderr)
+        for t in ct["targets"]:
+            print(f"  {t['target']:.0f}% 이상: 확신도 {t['threshold'] * 100:.0f}% 넘는 날 "
+                  f"(전체의 {t['share'] * 100:.0f}%, {t['games']}경기) "
+                  f"→ 실측 {t['accuracy']:.1f}%", file=sys.stderr)
+    else:
+        print("  목표 적중률을 넘는 구간이 없다", file=sys.stderr)
         if m - b < 3.0:
             print("  개선이 3%p 미만이다. 갈아끼울 값어치가 있는지 다시 보라.",
                   file=sys.stderr)

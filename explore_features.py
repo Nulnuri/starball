@@ -50,7 +50,7 @@ def build(games: list, prior=None) -> list:
     사전값 축소가 들어가면서 정의가 갈렸다. 그러면 여기서 고른 특징이
     실제 학습과 다른 값 위에서 고른 것이 된다 — 실험 결과가 쓸모없어진다.
     """
-    rows = T.build_rows(games, prior=prior)
+    rows = T.build_rows(games, prior=prior)   # 팩터는 build_rows 가 계산한다
     for r in rows:
         r["f"] = dict(zip(T.FEATURES, r["feat"]))
     return rows

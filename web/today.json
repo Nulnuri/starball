@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-02T17:28:45+09:00",
+ "generated": "2026-09-02T17:42:00+09:00",
  "game": {
   "date": "2026-09-02",
   "time": "18:30",
@@ -36,6 +36,8 @@
    ],
    "confidence": "매우 높음",
    "tierAccuracy": 84.4,
+   "band": 80.0,
+   "bandAccuracy": 80.1,
    "model": "learned"
   },
   {

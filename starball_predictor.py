@@ -1611,6 +1611,11 @@ def use_learned_outcome(ctx: GameContext, pred: Prediction) -> bool:
     after = max(fresh, key=fresh.get)
     tier = out.get("confidence")
     acc = out.get("tierAccuracy")
+    if out.get("band"):
+        pred.drivers.append(
+            f"오늘은 확신도 {out['band']:.0f}% 구간이다 — 과거 이 구간의 "
+            f"실제 적중률 {out['bandAccuracy']}% (전체 경기의 "
+            f"{out['bandShare'] * 100:.0f}%만 해당)")
     pred.drivers.append(
         f"승패는 학습 모델 값이다 (2024~2026 {model['trained_on']['rows']}표본, "
         f"실측 {model['validation']['model']}%). 확신도 {tier}"

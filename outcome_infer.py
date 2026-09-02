@@ -90,8 +90,11 @@ def predict_hr(model: dict, games: list, tm: str, op: str, is_home: bool,
     if not model:
         return None
     state = T.state_through(games, before=date)
+    # 구장 팩터는 그 시즌 기록에서 계산한다. 하드코딩 값을 쓰면 신규 구장이
+    # 생긴 해에 시즌 내내 틀린다(2025 신규 대전에서 실제로 24% 어긋났다).
+    parks = T.park_hr_factors([g for g in games if g.get("date", "") < date])
     f = T.featurize(state, tm, op, is_home, stadium, my_sp, op_sp, date,
-                    strict=False)
+                    strict=False, parks=parks)
     if f is None:
         return None
     x = [(f[n] - model["mean"][i]) / (model["scale"][i] or 1.0)
@@ -137,6 +140,21 @@ def tier_accuracy(model: dict, top: float) -> Optional[float]:
     return (model.get("confidence") or {}).get("overall")
 
 
+def target_band(model: dict, top: float) -> Optional[dict]:
+    """오늘이 어느 '목표 적중률' 구간인지. 아니면 None.
+
+    "무조건 70% 이상" 은 매 경기로는 불가능하다(반칙 오라클도 59.2%).
+    대신 문턱을 넘는 날에만 그렇게 표시하면 그 약속은 지켜진다.
+    문턱과 실측치는 학습 때 잰 값이라, 재학습하면 함께 갱신된다.
+    """
+    best = None
+    for t in (model.get("confidence") or {}).get("targets") or []:
+        if top >= t.get("threshold", 1.0):
+            if not best or t["target"] > best["target"]:
+                best = t
+    return best
+
+
 def predict_outcome(model: dict, games: list, tm: str, op: str, is_home: bool,
                     stadium: str, my_sp: str, op_sp: str,
                     date: str) -> Optional[dict]:
@@ -148,8 +166,9 @@ def predict_outcome(model: dict, games: list, tm: str, op: str, is_home: bool,
     if not model:
         return None
     state = T.state_through(games, before=date)
+    parks = T.park_hr_factors([g for g in games if g.get("date", "") < date])
     f = T.featurize(state, tm, op, is_home, stadium, my_sp, op_sp, date,
-                    strict=False)
+                    strict=False, parks=parks)
     if f is None:
         return None
 
@@ -168,5 +187,10 @@ def predict_outcome(model: dict, games: list, tm: str, op: str, is_home: bool,
     top = max(probs)
     out["confidence"] = tier_of(model, top)
     out["tierAccuracy"] = tier_accuracy(model, top)
+    band = target_band(model, top)
+    if band:
+        out["band"] = band["target"]
+        out["bandAccuracy"] = band["accuracy"]
+        out["bandShare"] = band["share"]
     out["source"] = "학습 모델"
     return out
