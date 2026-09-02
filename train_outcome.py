@@ -311,6 +311,66 @@ def fit_temperature(sc, m, rows_val: list) -> float:
     return round(best_t, 3)
 
 
+def confidence_tiers(rows: list, C: float) -> dict:
+    """확신도가 얼마 이상일 때 실제로 몇 % 맞는지 잰다.
+
+    전체 적중률은 59% 에서 포화됐다(팀 전력을 완벽히 아는 이론 상한이
+    57.9~60.5%). 더 올릴 데가 없으므로, 남은 값어치는 **어느 날을 믿어야
+    하는지** 를 말해주는 데 있다.
+
+    실측(2024~2026, 7개 분할 합산 1,496경기):
+        확신도 상위  5% → 81.1%
+        확신도 상위 10% → 72.5%
+        확신도 상위 15% → 66.1%
+        전체            → 59.2%
+
+    여기서 낸 문턱을 앱이 써서 '오늘은 믿을 만한 날' 을 표시한다.
+    문턱을 코드에 손으로 박지 않는 이유는, 시즌마다 전력 분포가 달라지면
+    같은 확신도가 다른 적중률을 뜻하기 때문이다.
+    """
+    import numpy as np
+
+    newest = max(r.get("season", 0) for r in rows)
+    past = [r for r in rows if r.get("season", newest) != newest]
+    cur = [r for r in rows if r.get("season", newest) == newest]
+    if len(cur) < 120:
+        past, cur = [], rows
+
+    probs, hits = [], []
+    for frac in (0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8):
+        cut = int(len(cur) * frac)
+        tr, te = past + cur[:cut], cur[cut:]
+        if len(te) < 60:
+            continue
+        hold = max(60, int(len(tr) * 0.2))
+        sc_h, m_h = fit(tr[:-hold], C)
+        temp = fit_temperature(sc_h, m_h, tr[-hold:])
+        sc, m = fit(tr, C)
+        lg = m.decision_function(sc.transform(core_matrix(te)))
+        if lg.ndim == 1:
+            lg = np.column_stack([-lg, lg])
+        P = softmax(lg / temp)
+        y = np.array([r["y"] for r in te])
+        probs += P.max(1).tolist()
+        hits += (m.classes_[P.argmax(1)] == y).tolist()
+
+    if len(probs) < 200:
+        return {}
+    p = np.array(probs)
+    ok = np.array(hits)
+    out = {"n": len(p), "overall": round(float(ok.mean()) * 100, 1), "tiers": []}
+    for share in (0.05, 0.10, 0.15, 0.20, 0.30):
+        n = max(20, int(len(p) * share))
+        idx = np.argsort(-p)[:n]
+        out["tiers"].append({
+            "share": share,
+            "threshold": round(float(p[idx].min()), 4),
+            "games": n,
+            "accuracy": round(float(ok[idx].mean()) * 100, 1),
+        })
+    return out
+
+
 def rows_by_season(paths: list) -> list:
     """시즌마다 따로 펼쳐 합친다.
 
@@ -434,6 +494,17 @@ def main() -> int:
               file=sys.stderr)
         print(f"               말한 확률과 실제 적중률의 차이다. "
               f"화면의 % 를 믿을 수 있는지를 뜻한다.", file=sys.stderr)
+
+    ct = confidence_tiers(rows, args.C)
+    if ct.get("tiers"):
+        print("", file=sys.stderr)
+        n_ct = ct["n"]
+        print(f"확신도가 높은 날만 골랐을 때 (표본 {n_ct}건)", file=sys.stderr)
+        for t in ct["tiers"]:
+            print(f"  상위 {t['share'] * 100:>3.0f}% (확신도 {t['threshold'] * 100:.0f}% 이상, "
+                  f"{t['games']:>3}경기)  적중 {t['accuracy']:>5.1f}%", file=sys.stderr)
+        print(f"  전체                                        "
+              f"적중 {ct['overall']:>5.1f}%", file=sys.stderr)
         if m - b < 3.0:
             print("  개선이 3%p 미만이다. 갈아끼울 값어치가 있는지 다시 보라.",
                   file=sys.stderr)
@@ -459,6 +530,7 @@ def main() -> int:
         # 운영 쪽에서 로짓을 이 값으로 나눈 뒤 소프트맥스를 취한다.
         # 순서는 안 바뀌므로 고르는 값은 같고, 말하는 확률만 정직해진다.
         "temperature": temperature,
+        "confidence": confidence_tiers(rows, args.C),
         "validation": {
             "splits": n,
             "base": round(sum(v["base"]) / n * 100, 1) if n else None,
