@@ -51,6 +51,30 @@ MIN_TEAM_GAMES = 15      # 팀 누적이 이만큼 쌓인 뒤부터 학습에 �
 MIN_SP_IP = 20.0         # 선발 누적 이닝 하한
 LABELS = ["승", "무", "패"]
 
+# 학습에 넣는 첫 시즌.
+#
+# 2024 에 ABS(자동 볼판정)와 확대 베이스가 도입되면서 득점 환경이 갈렸다.
+# 그 이전 시즌은 표본을 늘려주지만 '지금과 다른 리그'를 가르친다. 2025 에는
+# 대전 새 구장(한화생명볼파크)이 열려 구장 팩터도 그 전과 이어지지 않는다.
+#
+# 그래서 학습은 2024 이후만 쓴다. 그 이전 기록은 받아두되 상대전적 참고로만
+# 쓴다(h2h_history.json). 이 값을 내리려면 eval_window.py 로 최근 시즌
+# 검증 성적이 실제로 나아지는지 먼저 확인할 것 — 표본이 늘어도 성적이
+# 나빠지는 구간이 있다.
+TRAIN_FROM_SEASON = 2024
+
+
+def training_logs(from_season: int = TRAIN_FROM_SEASON) -> list:
+    """학습에 쓸 경기 로그 파일들. 기준 시즌 이후만 고른다."""
+    import glob
+    import re
+    out = []
+    for path in sorted(glob.glob("gamelog_*.json")):
+        m = re.search(r"gamelog_(\d{4})\.json$", path.replace("\\", "/"))
+        if m and int(m.group(1)) >= from_season:
+            out.append(path)
+    return out
+
 
 def load(path: str) -> list:
     with open(path, encoding="utf-8") as f:
@@ -173,15 +197,21 @@ def main() -> int:
             pass
 
     ap = argparse.ArgumentParser(description="승패 문항 학습")
-    ap.add_argument("--log", nargs="*", default=["gamelog_2026.json"],
-                    help="경기 로그. 여러 시즌을 함께 줄 수 있다")
+    ap.add_argument("--log", nargs="*", default=None,
+                    help=f"경기 로그. 기본값은 {TRAIN_FROM_SEASON} 시즌 이후 전부")
     ap.add_argument("--C", type=float, default=0.2,
                     help="정규화 세기(작을수록 강하게 억제)")
     ap.add_argument("--emit", action="store_true", help="코드에 붙일 형태로 출력")
     args = ap.parse_args()
 
+    paths = args.log or training_logs()
+    if not paths:
+        raise SystemExit(f"{TRAIN_FROM_SEASON} 이후 경기 로그가 없습니다. "
+                         f"build_gamelog.py 로 먼저 받으세요.")
+    print(f"학습에 쓰는 로그: {', '.join(paths)}", file=sys.stderr)
+
     games = []
-    for p in args.log:
+    for p in paths:
         try:
             games += load(p)
         except FileNotFoundError:

@@ -86,13 +86,20 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="학습 창 비교")
     ap.add_argument("--test", type=int, default=None, help="검증에 쓸 시즌")
     ap.add_argument("--C", type=float, default=0.2)
+    ap.add_argument("--floor", type=int, default=None,
+                    help=f"학습에 넣을 첫 시즌 (기본 {T.TRAIN_FROM_SEASON})")
     args = ap.parse_args()
 
     have = seasons_available()
     if len(have) < 2:
         raise SystemExit(f"시즌이 2개 이상 필요합니다. 지금: {have}")
     test_year = args.test or have[-1]
-    past = [y for y in have if y < test_year]
+    floor = args.floor if args.floor is not None else T.TRAIN_FROM_SEASON
+    skipped = [y for y in have if y < floor]
+    if skipped:
+        print(f"학습에서 제외: {skipped} "
+              f"(리그 환경이 달라 상대전적 참고용으로만 쓴다)", file=sys.stderr)
+    past = [y for y in have if floor <= y < test_year]
     if not past:
         raise SystemExit(f"{test_year} 이전 시즌이 없습니다.")
 
