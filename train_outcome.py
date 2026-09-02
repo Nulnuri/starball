@@ -34,6 +34,7 @@ import json
 import os
 import sys
 from collections import Counter, defaultdict
+from typing import Optional
 
 PARK = {"창원": 1.421, "대구": 1.324, "문학": 1.283, "광주": 1.078,
         "대전": 0.861, "고척": 0.837, "사직": 0.781, "수원": 0.749,
@@ -168,6 +169,62 @@ def feed(state: dict, game: dict) -> None:
                 state["bp"][tm]["er"] += er
 
 
+# 개막 직후에는 올 시즌 표본이 거의 없다. 작년 최종 성적을 사전값으로 두고
+# 경기가 쌓이는 만큼 그쪽으로 옮겨간다(축소 추정). 선착순 목표에서는 개막
+# 3주가 가장 중요한데, 이게 없으면 그 구간에 모델이 아예 안 돌았다.
+# 축소 강도. 값이 작을수록 올 시즌 성적을 빨리 믿는다.
+#
+# 같은 경기로 공정하게 비교한 결과(학습 2024~2025, 검증 2026):
+#     20/30  공통 610경기 56.1% · 개막 174경기 53.4%
+#      6/10  공통       55.1% · 개막       55.2%
+#      3/6   공통       54.6% · 개막       56.3%
+# 사전값을 쓰면 공통 경기에서도 +0.5~1.3%p 나아지고, 예측 자체가 불가능했던
+# 개막 174경기가 커버된다.
+#
+# 차이가 ±1%p 로 표본 잡음 범위 안이라 확신할 수는 없다. 스타볼 7개는
+# **선착순**이어서 개막 구간의 값어치가 크므로 균형점인 6/10 을 쓴다.
+# 표본이 더 쌓이면 이 표를 다시 만들어 고를 것.
+K_TEAM = 6.0
+K_SP = 10.0
+
+
+def _shrink(obs_sum: float, obs_n: float, prior_rate: Optional[float],
+            k: float) -> float:
+    """관측과 사전값을 표본 크기로 섞는다. 사전값이 없으면 관측만 쓴다."""
+    if prior_rate is None:
+        return obs_sum / obs_n if obs_n else 0.0
+    return (obs_sum + prior_rate * k) / (obs_n + k)
+
+
+def _prior_team(prior: Optional[dict], code: str) -> Optional[dict]:
+    if not prior:
+        return None
+    t = (prior.get("team") or {}).get(code)
+    if not t or not t["g"]:
+        return None
+    g = t["g"]
+    return {"rs": t["rs"] / g, "ra": t["ra"] / g, "hr": t["hr"] / g,
+            "hra": t["hra"] / g, "w": t["w"] / g}
+
+
+def _prior_pit(prior: Optional[dict], code: str) -> Optional[dict]:
+    if not prior or not code:
+        return None
+    q = (prior.get("pit") or {}).get(code)
+    if not q or q["ip"] < 10:
+        return None
+    return {"era": q["er"] * 9 / q["ip"], "hr9": q["hr"] * 9 / q["ip"],
+            "ip": q["ip"] / max(q["n"], 1)}
+
+
+def _prior_h2h(prior: Optional[dict], tm: str, op: str) -> float:
+    """작년 상대전적 승률. 없으면 0.5."""
+    if not prior:
+        return 0.5
+    h = (prior.get("h2h") or {}).get((tm, op))
+    return h[0] / h[1] if h and h[1] else 0.5
+
+
 def _era(rec: dict, floor: float = 1.0) -> float:
     return rec["er"] * 9 / rec["ip"] if rec["ip"] >= floor else 4.5
 
@@ -191,7 +248,8 @@ def _days(prev, date: str) -> float:
 
 def featurize(state: dict, tm: str, op: str, is_home: bool, stadium: str,
               my_sp: str, op_sp: str, date: str,
-              strict: bool = True) -> dict | None:
+              strict: bool = True,
+              prior: Optional[dict] = None) -> dict | None:
     """특징 한 벌을 만든다. **학습과 운영이 반드시 이 함수를 함께 쓴다.**
 
     학습은 gamelog 로 누적을 쌓아 이 함수를 부르고, 운영도 같은 gamelog 로
@@ -202,18 +260,33 @@ def featurize(state: dict, tm: str, op: str, is_home: bool, stadium: str,
     없더라도 답을 내야 하므로 strict=False 로 부르고, 얕으면 리그 평균으로
     채운다.
     """
-    a = state["team"].get(tm)
-    o = state["team"].get(op)
-    if not a or not o or not a["g"] or not o["g"]:
+    ZERO_T = {"g": 0, "rs": 0, "ra": 0, "hr": 0, "hra": 0, "w": 0,
+              "last": None, "recent": []}
+    a = state["team"].get(tm) or dict(ZERO_T)
+    o = state["team"].get(op) or dict(ZERO_T)
+    pa, po_ = _prior_team(prior, tm), _prior_team(prior, op)
+
+    # 사전값이 있으면 표본이 없어도 답을 낼 수 있다. 없으면 종전대로 하한을 본다.
+    if not prior and (not a["g"] or not o["g"]):
         return None
-    if strict and (a["g"] < MIN_TEAM_GAMES or o["g"] < MIN_TEAM_GAMES):
+    if strict and not prior and (a["g"] < MIN_TEAM_GAMES
+                                 or o["g"] < MIN_TEAM_GAMES):
+        return None
+    if strict and prior and (a["g"] + o["g"] == 0) and not (pa and po_):
         return None
 
     pm = state["pit"].get(my_sp)
     po = state["pit"].get(op_sp)
-    if strict and (not pm or not po
-                   or pm["ip"] < MIN_SP_IP or po["ip"] < MIN_SP_IP):
+    ppm, ppo = _prior_pit(prior, my_sp), _prior_pit(prior, op_sp)
+    if strict and not prior and (not pm or not po
+                                 or pm["ip"] < MIN_SP_IP or po["ip"] < MIN_SP_IP):
         return None
+    if strict and prior:
+        # 사전값도 없고 올 시즌 이닝도 얕은 선발이면 쓸 수 없다(신인 첫 등판).
+        if not (pm and pm["ip"] >= MIN_SP_IP) and not ppm:
+            return None
+        if not (po and po["ip"] >= MIN_SP_IP) and not ppo:
+            return None
     pm = pm or {"ip": 0.0, "er": 0, "hr": 0, "n": 0, "recent": []}
     po = po or {"ip": 0.0, "er": 0, "hr": 0, "n": 0, "recent": []}
 
@@ -227,31 +300,62 @@ def featurize(state: dict, tm: str, op: str, is_home: bool, stadium: str,
     def sp_hr9(rec):
         return rec["hr"] * 9 / rec["ip"] if rec["ip"] >= 1.0 else 0.94
 
+    def tr(rec, pri, key):
+        """팀 지표. 사전값이 있으면 표본 크기로 섞는다."""
+        return _shrink(rec[key], rec["g"], (pri or {}).get(key), K_TEAM)
+
+    def sp_era(rec, pri):
+        if rec and rec["ip"] >= 1.0:
+            return _shrink(rec["er"] * 9, rec["ip"], (pri or {}).get("era"), K_SP)
+        return (pri or {}).get("era", 4.5)
+
+    def sp_hr9_(rec, pri):
+        if rec and rec["ip"] >= 1.0:
+            return _shrink(rec["hr"] * 9, rec["ip"], (pri or {}).get("hr9"), K_SP)
+        return (pri or {}).get("hr9", 0.94)
+
+    def sp_ip_(rec, pri):
+        if rec and rec["n"]:
+            return rec["ip"] / rec["n"]
+        return (pri or {}).get("ip", 5.0)
+
+    my_rs, my_ra = tr(a, pa, "rs"), tr(a, pa, "ra")
+    op_rs, op_ra = tr(o, po_, "rs"), tr(o, po_, "ra")
+    my_era, op_era = sp_era(pm, ppm), sp_era(po, ppo)
+
     return {
         "home": 1.0 if is_home else 0.0,
         "park": PARK.get(stadium, 1.0),
-        "my_rs": a["rs"] / a["g"], "my_ra": a["ra"] / a["g"],
-        "my_hr": a["hr"] / a["g"], "my_hra": a["hra"] / a["g"],
-        "my_win": a["w"] / a["g"],
-        "op_rs": o["rs"] / o["g"], "op_ra": o["ra"] / o["g"],
-        "op_hr": o["hr"] / o["g"], "op_hra": o["hra"] / o["g"],
-        "op_win": o["w"] / o["g"],
-        "my_sp_era": _era(pm), "my_sp_hr9": sp_hr9(pm), "my_sp_ip": sp_ip(pm),
-        "op_sp_era": _era(po), "op_sp_hr9": sp_hr9(po), "op_sp_ip": sp_ip(po),
-        "off_edge": a["rs"] / a["g"] - o["ra"] / o["g"],
-        "def_edge": o["rs"] / o["g"] - a["ra"] / a["g"],
-        "sp_edge": _era(po) - _era(pm),
+        "my_rs": my_rs, "my_ra": my_ra,
+        "my_hr": tr(a, pa, "hr"), "my_hra": tr(a, pa, "hra"),
+        "my_win": tr(a, pa, "w"),
+        "op_rs": op_rs, "op_ra": op_ra,
+        "op_hr": tr(o, po_, "hr"), "op_hra": tr(o, po_, "hra"),
+        "op_win": tr(o, po_, "w"),
+        "my_sp_era": my_era, "my_sp_hr9": sp_hr9_(pm, ppm),
+        "my_sp_ip": sp_ip_(pm, ppm),
+        "op_sp_era": op_era, "op_sp_hr9": sp_hr9_(po, ppo),
+        "op_sp_ip": sp_ip_(po, ppo),
+        "off_edge": my_rs - op_ra,
+        "def_edge": op_rs - my_ra,
+        "sp_edge": op_era - my_era,
         "my_bp_era": _era(ab, floor=10.0), "op_bp_era": _era(ob, floor=10.0),
+        # 최근 10경기가 없으면 작년 승률로 대신한다(개막 직후).
         "my_form10": (sum(a["recent"][-10:]) / len(a["recent"][-10:])
-                      if a["recent"] else 0.5),
+                      if a["recent"] else (pa or {}).get("w", 0.5)),
         "op_form10": (sum(o["recent"][-10:]) / len(o["recent"][-10:])
-                      if o["recent"] else 0.5),
-        "my_pyth": pyth(a["rs"] / a["g"], a["ra"] / a["g"]),
-        "op_pyth": pyth(o["rs"] / o["g"], o["ra"] / o["g"]),
+                      if o["recent"] else (po_ or {}).get("w", 0.5)),
+        "my_pyth": pyth(my_rs, my_ra),
+        "op_pyth": pyth(op_rs, op_ra),
         "my_rest": _days(a["last"], date), "op_rest": _days(o["last"], date),
-        "h2h_win": hh[0] / hh[1] if hh[1] else 0.5,
-        "my_sp_recent": _recent_era(pm), "op_sp_recent": _recent_era(po),
-        "sp_ip_edge": sp_ip(pm) - sp_ip(po),
+        # 올 시즌 상대전적이 없으면 작년 것을 쓴다.
+        "h2h_win": (hh[0] / hh[1] if hh[1]
+                    else _prior_h2h(prior, tm, op)),
+        "my_sp_recent": (_recent_era(pm) if pm and pm["ip"] >= 5
+                         else my_era),
+        "op_sp_recent": (_recent_era(po) if po and po["ip"] >= 5
+                         else op_era),
+        "sp_ip_edge": sp_ip_(pm, ppm) - sp_ip_(po, ppo),
     }
 
 
@@ -265,7 +369,7 @@ def state_through(games: list, before: str | None = None) -> dict:
     return st
 
 
-def build_rows(games: list) -> list:
+def build_rows(games: list, prior: Optional[dict] = None) -> list:
     """팀-경기 표본을 만든다. 그 시점까지의 누적만 특징으로 쓴다.
 
     미래 정보가 새면 검증 성적만 좋아지고 실제 예측은 틀린다. 누적 갱신은
@@ -293,7 +397,7 @@ def build_rows(games: list) -> list:
             my, oy = (hs, as_) if is_home else (as_, hs)
             f = featurize(st, x.get(me), x.get(foe), is_home,
                           x.get("stadium", ""), ms.get("pcode"),
-                          os_.get("pcode"), date, strict=True)
+                          os_.get("pcode"), date, strict=True, prior=prior)
             if f is None:
                 continue
             rows.append({"date": date, "team": x.get(me),
@@ -432,10 +536,19 @@ def rows_by_season(paths: list) -> list:
     2025 개막전 팀이 2024 성적을 들고 나온다. 실제로 이 탓에 성적이
     59.8% 대신 55.3% 로 나왔다.
     """
+    import re
     out = []
     for path in paths:
+        m = re.search(r"gamelog_(\d{4})\.json$", path.replace("\\", "/"))
+        prior = None
+        if m:
+            # 작년 최종 성적을 사전값으로 넘긴다. 개막 직후에도 예측이 나온다.
+            try:
+                prior = state_through(load(f"gamelog_{int(m.group(1)) - 1}.json"))
+            except FileNotFoundError:
+                prior = None
         try:
-            out += build_rows(load(path))
+            out += build_rows(load(path), prior=prior)
         except FileNotFoundError:
             print(f"{path} 없음 — 건너뜀", file=sys.stderr)
     out.sort(key=lambda r: (r.get("season", 0), r["date"]))
