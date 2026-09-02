@@ -41,11 +41,18 @@ FEATURES = [
     "park",                                          # 구장 홈런 팩터
     "my_rs", "my_ra", "my_hr", "my_hra", "my_win",   # 우리 팀 시점 누적
     "op_rs", "op_ra", "op_hr", "op_hra", "op_win",   # 상대 팀
-    "my_sp_era", "my_sp_hr9", "my_sp_ip",            # 우리 선발
+    "my_sp_era", "my_sp_hr9", "my_sp_ip",            # 우리 선발 (시즌 누적)
     "op_sp_era", "op_sp_hr9", "op_sp_ip",            # 상대 선발
     "off_edge",                                      # 우리 타선 - 상대 실점
     "def_edge",                                      # 상대 타선 - 우리 실점
     "sp_edge",                                       # 상대 선발 ERA - 우리 선발 ERA
+    "my_bp_era", "op_bp_era",                        # 불펜 ERA (선발 제외)
+    "my_form10", "op_form10",                        # 최근 10경기 승률
+    "my_pyth", "op_pyth",                            # 득실점 기반 기대승률
+    "my_rest", "op_rest",                            # 휴식일
+    "h2h_win",                                       # 올 시즌 이 상대와의 승률
+    "my_sp_recent", "op_sp_recent",                  # 선발 최근 3등판 ERA
+    "sp_ip_edge",                                    # 선발 소화이닝 차
 ]
 
 # 실제로 학습에 넣는 특징. 위 21개를 다 쓰면 표본 474건에 과적합해서
@@ -58,7 +65,9 @@ FEATURES = [
 # 즉 59.4% 는 이 종목에서 사실상 상한이다. 더 올리려면 경기 전에 존재하지
 # 않는 정보(당일 부상·심판·날씨 변화)가 필요하다.
 CORE_FEATURES = ["home", "my_win", "op_win",
-                 "my_sp_era", "op_sp_era", "off_edge", "def_edge"]
+                 "my_sp_era", "op_sp_era", "off_edge", "def_edge",
+                 "my_sp_recent", "op_sp_recent",
+                 "h2h_win", "my_form10"]
 
 MIN_TEAM_GAMES = 15      # 팀 누적이 이만큼 쌓인 뒤부터 학습에 쓴다
 MIN_SP_IP = 20.0         # 선발 누적 이닝 하한
@@ -96,14 +105,28 @@ def load(path: str) -> list:
     return sorted(games, key=lambda g: g.get("date", ""))
 
 
-def build_rows(games: list) -> list:
-    """경기를 팀-경기 표본으로 펼치고, 그 시점까지의 누적만 특징으로 쓴다.
+def pyth(rs: float, ra: float) -> float:
+    """득실점으로 낸 기대승률. 승률보다 표본 잡음이 적다."""
+    if rs <= 0 and ra <= 0:
+        return 0.5
+    a, b = rs ** 1.83, ra ** 1.83
+    return a / (a + b) if a + b else 0.5
 
-    미래 정보가 새어들면 검증 성적이 부풀어 실제로는 안 맞는다. 그래서 누적
-    갱신은 반드시 특징을 만든 뒤에 한다.
+
+def build_rows(games: list) -> list:
+    """팀-경기 표본을 만든다. 그 시점까지의 누적만 특징으로 쓴다.
+
+    미래 정보가 새면 검증 성적만 좋아지고 실제 예측은 틀린다. 누적 갱신은
+    반드시 특징을 다 만든 뒤에 한다.
+
+    특징 생성은 이 함수 하나뿐이다. 두 곳에 두면 반드시 갈린다 —
+    실제로 eval_window 가 21개, 여기가 7개를 쓰던 시기가 있었다.
     """
-    team = defaultdict(lambda: {"g": 0, "rs": 0, "ra": 0, "hr": 0, "hra": 0, "w": 0})
-    pit = defaultdict(lambda: {"ip": 0.0, "er": 0, "hr": 0, "n": 0})
+    team = defaultdict(lambda: {"g": 0, "rs": 0, "ra": 0, "hr": 0, "hra": 0,
+                                "w": 0, "last": None, "recent": []})
+    pit = defaultdict(lambda: {"ip": 0.0, "er": 0, "hr": 0, "n": 0, "recent": []})
+    bp = defaultdict(lambda: {"ip": 0.0, "er": 0})
+    h2h = defaultdict(lambda: [0, 0])          # (팀, 상대) → [승, 경기]
     rows = []
 
     for x in games:
@@ -112,6 +135,7 @@ def build_rows(games: list) -> list:
             continue
         box = x.get("box") or {}
         pitchers = x.get("pitchers") or {}
+        date = x.get("date", "")
 
         def starter(side):
             for p in (pitchers.get(side) or []):
@@ -121,6 +145,8 @@ def build_rows(games: list) -> list:
 
         tsnap = {t: dict(v) for t, v in team.items()}
         psnap = {k: dict(v) for k, v in pit.items()}
+        bsnap = {k: dict(v) for k, v in bp.items()}
+        hsnap = {k: list(v) for k, v in h2h.items()}
 
         for me, foe, is_home in (("home", "away", True), ("away", "home", False)):
             tm, op = x.get(me), x.get(foe)
@@ -135,28 +161,65 @@ def build_rows(games: list) -> list:
             if not (pm and po) or pm["ip"] < MIN_SP_IP or po["ip"] < MIN_SP_IP:
                 continue
 
-            f = [
-                1.0 if is_home else 0.0,
-                PARK.get(x.get("stadium", ""), 1.0),
-                a["rs"] / a["g"], a["ra"] / a["g"], a["hr"] / a["g"],
-                a["hra"] / a["g"], a["w"] / a["g"],
-                o["rs"] / o["g"], o["ra"] / o["g"], o["hr"] / o["g"],
-                o["hra"] / o["g"], o["w"] / o["g"],
-                pm["er"] * 9 / pm["ip"], pm["hr"] * 9 / pm["ip"],
-                pm["ip"] / max(pm["n"], 1),
-                po["er"] * 9 / po["ip"], po["hr"] * 9 / po["ip"],
-                po["ip"] / max(po["n"], 1),
-                a["rs"] / a["g"] - o["ra"] / o["g"],
-                o["rs"] / o["g"] - a["ra"] / a["g"],
-                po["er"] * 9 / po["ip"] - pm["er"] * 9 / pm["ip"],
-            ]
-            if len(f) != len(FEATURES):
-                raise SystemExit(f"특징 개수 불일치 {len(f)} != {len(FEATURES)}")
-            rows.append({"date": x.get("date", ""), "team": tm, "feat": f,
-                         "season": int(str(x.get("date", "0"))[:4] or 0),
+            ab, ob = bsnap.get(tm, {"ip": 0.0, "er": 0}), bsnap.get(op, {"ip": 0.0, "er": 0})
+
+            def days(prev):
+                if not prev:
+                    return 1.0
+                try:
+                    from datetime import date as D
+                    d1 = D.fromisoformat(prev)
+                    d2 = D.fromisoformat(date)
+                    return float(min((d2 - d1).days, 7))
+                except ValueError:
+                    return 1.0
+
+            def era(rec, ip_key="ip", er_key="er", floor=1.0):
+                return rec[er_key] * 9 / rec[ip_key] if rec[ip_key] >= floor else 4.5
+
+            def recent_era(rec):
+                r = rec.get("recent") or []
+                ip = sum(v[0] for v in r[-3:])
+                er = sum(v[1] for v in r[-3:])
+                return er * 9 / ip if ip >= 5 else era(rec)
+
+            base = {
+                "home": 1.0 if is_home else 0.0,
+                "park": PARK.get(x.get("stadium", ""), 1.0),
+                "my_rs": a["rs"] / a["g"], "my_ra": a["ra"] / a["g"],
+                "my_hr": a["hr"] / a["g"], "my_hra": a["hra"] / a["g"],
+                "my_win": a["w"] / a["g"],
+                "op_rs": o["rs"] / o["g"], "op_ra": o["ra"] / o["g"],
+                "op_hr": o["hr"] / o["g"], "op_hra": o["hra"] / o["g"],
+                "op_win": o["w"] / o["g"],
+                "my_sp_era": era(pm), "my_sp_hr9": pm["hr"] * 9 / pm["ip"],
+                "my_sp_ip": pm["ip"] / max(pm["n"], 1),
+                "op_sp_era": era(po), "op_sp_hr9": po["hr"] * 9 / po["ip"],
+                "op_sp_ip": po["ip"] / max(po["n"], 1),
+                "off_edge": a["rs"] / a["g"] - o["ra"] / o["g"],
+                "def_edge": o["rs"] / o["g"] - a["ra"] / a["g"],
+                "sp_edge": era(po) - era(pm),
+                # ── 후보 ──
+                "my_bp_era": era(ab, floor=10.0), "op_bp_era": era(ob, floor=10.0),
+                "my_form10": (sum(a["recent"][-10:]) / len(a["recent"][-10:])
+                              if a["recent"] else 0.5),
+                "op_form10": (sum(o["recent"][-10:]) / len(o["recent"][-10:])
+                              if o["recent"] else 0.5),
+                "my_pyth": pyth(a["rs"] / a["g"], a["ra"] / a["g"]),
+                "op_pyth": pyth(o["rs"] / o["g"], o["ra"] / o["g"]),
+                "my_rest": days(a["last"]), "op_rest": days(o["last"]),
+                "h2h_win": (hsnap.get((tm, op), [0, 0])[0]
+                            / hsnap[(tm, op)][1] if hsnap.get((tm, op), [0, 0])[1]
+                            else 0.5),
+                "my_sp_recent": recent_era(pm), "op_sp_recent": recent_era(po),
+                "sp_ip_edge": pm["ip"] / max(pm["n"], 1) - po["ip"] / max(po["n"], 1),
+            }
+            feat = [base[n] for n in FEATURES]
+            rows.append({"date": date, "team": tm, "feat": feat,
+                         "season": int(str(date)[:4] or 0),
                          "y": 0 if my > oy else (2 if my < oy else 1)})
 
-        # 특징을 다 만든 뒤에 누적을 갱신한다 (미래 정보 차단)
+        # 누적 갱신 (특징을 다 만든 뒤에)
         for me, foe, is_home in (("home", "away", True), ("away", "home", False)):
             tm = x.get(me)
             my, oy = (hs, as_) if is_home else (as_, hs)
@@ -166,26 +229,41 @@ def build_rows(games: list) -> list:
             r["ra"] += oy
             r["hr"] += int((box.get(foe) or {}).get("hr_allowed") or 0)
             r["hra"] += int((box.get(me) or {}).get("hr_allowed") or 0)
-            r["w"] += 1 if my > oy else 0
+            won = 1 if my > oy else 0
+            r["w"] += won
+            r["recent"].append(won)
+            r["last"] = date
+            h2h[(tm, x.get(foe))][0] += won
+            h2h[(tm, x.get(foe))][1] += 1
             for p in (pitchers.get(me) or []):
-                q = pit[p.get("pcode")]
-                q["ip"] += p.get("ip") or 0
-                q["er"] += p.get("er") or 0
-                q["hr"] += p.get("hr") or 0
+                ip = p.get("ip") or 0
+                er = p.get("er") or 0
                 if p.get("started"):
+                    q = pit[p.get("pcode")]
+                    q["ip"] += ip
+                    q["er"] += er
+                    q["hr"] += p.get("hr") or 0
                     q["n"] += 1
+                    q["recent"].append((ip, er))
+                else:
+                    bp[tm]["ip"] += ip
+                    bp[tm]["er"] += er
     return rows
 
 
 def core_matrix(rows: list):
-    """핵심 특징만 뽑아낸다. 순서는 CORE_FEATURES 를 따른다."""
+    """학습에 쓰는 특징만 뽑아낸다. 순서는 CORE_FEATURES 를 따른다."""
     import numpy as np
     ii = [FEATURES.index(n) for n in CORE_FEATURES]
     return np.array([[r["feat"][k] for k in ii] for r in rows])
 
 
 def fit(rows: list, C: float):
-    """표준화 + 로지스틱. 표준화를 빼면 정규화가 특징마다 다르게 걸린다."""
+    """표준화 + 로지스틱.
+
+    표준화를 빼면 정규화가 특징마다 다른 세기로 걸린다(승률은 0~1,
+    ERA 는 0~10 이라 스케일이 열 배 다르다).
+    """
     from sklearn.linear_model import LogisticRegression
     from sklearn.preprocessing import StandardScaler
     import numpy as np
@@ -194,6 +272,43 @@ def fit(rows: list, C: float):
     sc = StandardScaler().fit(X)
     m = LogisticRegression(max_iter=5000, C=C).fit(sc.transform(X), y)
     return sc, m
+
+
+def softmax(z):
+    import numpy as np
+    z = z - z.max(axis=1, keepdims=True)
+    e = np.exp(z)
+    return e / e.sum(axis=1, keepdims=True)
+
+
+def fit_temperature(sc, m, rows_val: list) -> float:
+    """확신도를 실제 적중률에 맞춘다 (온도 보정).
+
+    로짓을 T 로 나눈다. T > 1 이면 자신감을 낮추고 < 1 이면 높인다.
+    소프트맥스의 순서는 T 로 나눠도 바뀌지 않으므로 **적중률은 그대로**이고
+    말하는 확률만 정직해진다. 파라미터가 하나뿐이라 표본이 적어도 안전하다.
+
+    이걸 안 하면 '70% 확신' 이라고 말한 경기의 실제 적중률이 37.5% 인
+    상태가 된다 — 그러면 화면의 숫자가 거짓말이 된다.
+    """
+    import numpy as np
+    if len(rows_val) < 60:
+        return 1.0
+    X = sc.transform(core_matrix(rows_val))
+    y = np.array([r["y"] for r in rows_val])
+    logit = m.decision_function(X)
+    if logit.ndim == 1:                      # 2클래스면 (n,) 로 온다
+        logit = np.column_stack([-logit, logit])
+    cols = {c: i for i, c in enumerate(m.classes_)}
+    idx = np.array([cols[v] for v in y])
+
+    best_t, best_nll = 1.0, float("inf")
+    for t in np.arange(0.4, 5.01, 0.05):
+        P = softmax(logit / t)
+        nll = -np.log(np.clip(P[np.arange(len(y)), idx], 1e-12, 1)).mean()
+        if nll < best_nll:
+            best_nll, best_t = nll, float(t)
+    return round(best_t, 3)
 
 
 def rows_by_season(paths: list) -> list:
@@ -232,7 +347,7 @@ def validate(rows: list, C: float) -> dict:
     if len(cur) < 120:                      # 시즌 초라 아직 자를 게 없다
         past, cur = [], rows
 
-    out = {"base": [], "model": [], "calib": []}
+    out = {"base": [], "model": [], "calib": [], "calib_raw": [], "temp": []}
     for frac in (0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8):
         cut = int(len(cur) * frac)
         tr, te = past + cur[:cut], cur[cut:]
@@ -242,13 +357,27 @@ def validate(rows: list, C: float) -> dict:
         yte = np.array([r["y"] for r in te])
         base = Counter(ytr).most_common(1)[0][0]
         out["base"].append(float((yte == base).mean()))
+        # 온도는 학습 구간의 뒤 20% 로 맞춘다. 검증 집합을 쓰면 반칙이다.
+        # 온도를 맞춘 뒤에는 계수를 학습 구간 전체로 다시 학습한다 —
+        # 배포할 때 그렇게 하므로, 검증도 같은 방식이어야 숫자를 믿을 수 있다.
+        hold = max(60, int(len(tr) * 0.2))
+        sc_h, m_h = fit(tr[:-hold], C)
+        temp = fit_temperature(sc_h, m_h, tr[-hold:])
         sc, m = fit(tr, C)
-        P = m.predict_proba(sc.transform(core_matrix(te)))
-        pred = m.classes_[P.argmax(1)]
+
+        X = sc.transform(core_matrix(te))
+        logit = m.decision_function(X)
+        if logit.ndim == 1:
+            logit = np.column_stack([-logit, logit])
+        raw = softmax(logit)
+        cal = softmax(logit / temp)
+        pred = m.classes_[cal.argmax(1)]
         ok = (pred == yte)
         out["model"].append(float(ok.mean()))
-        # 말한 확신도와 실제 적중률의 차이. 이게 크면 화면의 % 를 믿을 수 없다.
-        out["calib"].append(float(abs(P.max(1).mean() - ok.mean())))
+        # 말한 확신도와 실제 적중률의 차이. 크면 화면의 % 를 믿을 수 없다.
+        out["calib"].append(float(abs(cal.max(1).mean() - ok.mean())))
+        out["calib_raw"].append(float(abs(raw.max(1).mean() - ok.mean())))
+        out["temp"].append(temp)
     return out
 
 
@@ -299,13 +428,20 @@ def main() -> int:
               f"(범위 {min(v['model']) * 100:.0f}~{max(v['model']) * 100:.0f}%)",
               file=sys.stderr)
         ce = sum(v["calib"]) / n * 100
-        print(f"  확신도 오차  {ce:.1f}%p   "
-              f"(말한 확률과 실제 적중률의 차이. 화면의 % 를 믿을 수 있는지)",
+        cr = sum(v["calib_raw"]) / n * 100
+        tt = sum(v["temp"]) / n
+        print(f"  확신도 오차  {cr:.1f}%p → {ce:.1f}%p (온도 보정 후, 평균 T={tt:.2f})",
               file=sys.stderr)
+        print(f"               말한 확률과 실제 적중률의 차이다. "
+              f"화면의 % 를 믿을 수 있는지를 뜻한다.", file=sys.stderr)
         if m - b < 3.0:
             print("  개선이 3%p 미만이다. 갈아끼울 값어치가 있는지 다시 보라.",
                   file=sys.stderr)
 
+    # 온도용으로 마지막 20% 를 떼어 맞춘 뒤, 계수는 전체로 다시 학습한다.
+    hold = max(60, int(len(rows) * 0.2))
+    sc_h, m_h = fit(rows[:-hold], args.C)
+    temperature = fit_temperature(sc_h, m_h, rows[-hold:])
     scaler, model = fit(rows, args.C)
 
     payload = {
@@ -320,6 +456,9 @@ def main() -> int:
         "trained_on": {"games": n_games, "rows": len(rows),
                        "from": rows[0]["date"], "to": rows[-1]["date"]},
         "C": args.C,
+        # 운영 쪽에서 로짓을 이 값으로 나눈 뒤 소프트맥스를 취한다.
+        # 순서는 안 바뀌므로 고르는 값은 같고, 말하는 확률만 정직해진다.
+        "temperature": temperature,
         "validation": {
             "splits": n,
             "base": round(sum(v["base"]) / n * 100, 1) if n else None,
