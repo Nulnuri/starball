@@ -45,6 +45,10 @@ cd /Volumes/T7/starball-lab && source ~/.venvs/starball/bin/activate
 ```
 
 `gh` 는 push 할 때만 필요하다. 맥에 없으면 Homebrew 로 깐다
+    # 생성 파일(today.json 등) 충돌을 자동 처리한다. .gitattributes 가
+    # merge=ours 를 지정하지만 드라이버는 로컬 설정이라 기계마다 해야 한다.
+    git config merge.ours.driver true
+
 (`brew install gh` → `gh auth login`, **반드시 개인 계정 Nulnuri 로**.
 회사 계정이면 push 가 403 이다). Homebrew 자체가 없으면 brew.sh 참고.
 
