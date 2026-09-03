@@ -1,7 +1,7 @@
 {
- "generated": "2026-09-02T17:43:38+09:00",
+ "generated": "2026-09-03T10:04:43+09:00",
  "game": {
-  "date": "2026-09-02",
+  "date": "2026-09-03",
   "time": "18:30",
   "stadium": "잠실",
   "lg": "LG",
@@ -19,11 +19,11 @@
     "base": 50.9,
     "gain": 2.3
    },
-   "prob": 0.6508,
+   "prob": 0.6171,
    "options": [
     {
      "label": "승",
-     "prob": 0.3354
+     "prob": 0.3691
     },
     {
      "label": "무",
@@ -31,11 +31,11 @@
     },
     {
      "label": "패",
-     "prob": 0.6508
+     "prob": 0.6171
     }
    ],
-   "confidence": "매우 높음",
-   "tierAccuracy": 84.4,
+   "confidence": "높음",
+   "tierAccuracy": 79.7,
    "band": 80.0,
    "bandAccuracy": 80.1,
    "model": "learned"
@@ -50,47 +50,47 @@
     "base": 22.5,
     "gain": 0.0
    },
-   "prob": 0.1789,
+   "prob": 0.1882,
    "options": [
     {
      "label": "0점",
-     "prob": 0.0725
+     "prob": 0.0782
     },
     {
      "label": "1점",
-     "prob": 0.1789
+     "prob": 0.1882
     },
     {
      "label": "2점",
-     "prob": 0.1499
+     "prob": 0.157
     },
     {
      "label": "3점",
-     "prob": 0.124
+     "prob": 0.1273
     },
     {
      "label": "4점",
-     "prob": 0.1036
+     "prob": 0.1009
     },
     {
      "label": "5점",
-     "prob": 0.0965
+     "prob": 0.0936
     },
     {
      "label": "6점",
-     "prob": 0.0772
+     "prob": 0.0734
     },
     {
      "label": "7점",
-     "prob": 0.0639
+     "prob": 0.0595
     },
     {
      "label": "8점",
-     "prob": 0.0489
+     "prob": 0.046
     },
     {
      "label": "9점 이상",
-     "prob": 0.0845
+     "prob": 0.0758
     }
    ]
   },
@@ -104,89 +104,89 @@
     "base": 41.9,
     "gain": 0.0
    },
-   "prob": 0.4423,
+   "prob": 0.4758,
    "options": [
     {
      "label": "0개",
-     "prob": 0.4423
+     "prob": 0.4758
     },
     {
      "label": "1개",
-     "prob": 0.2913
+     "prob": 0.2765
     },
     {
      "label": "2개",
-     "prob": 0.1378
+     "prob": 0.1269
     },
     {
      "label": "3개",
-     "prob": 0.0637
+     "prob": 0.0579
     },
     {
      "label": "4개",
-     "prob": 0.0347
+     "prob": 0.0332
     },
     {
      "label": "5개 이상",
-     "prob": 0.0302
+     "prob": 0.0297
     }
    ]
   }
  ],
  "joint": {
-  "prob": 0.072,
+  "prob": 0.0675,
   "baseline": 0.0637,
-  "confidence": "낮음",
+  "confidence": "보통",
   "outcomeModel": "learned"
  },
  "score": {
-  "lg": 5.2,
-  "opp": 5.2,
+  "lg": 3.5,
+  "opp": 5.1,
   "modal": [
-   4,
-   4
+   2,
+   3
   ]
  },
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "김윤식",
-    "era": 4.97,
-    "whip": 1.59,
-    "ip": 29.0,
-    "games": 27,
+    "name": "박시원",
+    "era": 5.2,
+    "whip": 1.71,
+    "ip": 36.3,
+    "games": 24,
     "spot": true,
     "vs": {
      "foe": "두산",
-     "era": 10.13,
-     "ip": 2.7,
+     "era": 3.86,
+     "ip": 2.3,
      "games": 3
     },
     "recent": {
-     "era": 9.0,
-     "whip": 2.0,
-     "ip": 4.0,
+     "era": 7.24,
+     "whip": 1.83,
+     "ip": 13.7,
      "starts": 5,
-     "asStarter": 0
+     "asStarter": 3
     }
    },
    "opp": {
-    "name": "최승용",
-    "era": 5.61,
-    "whip": 1.55,
-    "ip": 96.3,
-    "games": 20,
+    "name": "곽빈",
+    "era": 2.36,
+    "whip": 1.09,
+    "ip": 141.0,
+    "games": 24,
     "spot": false,
     "vs": {
      "foe": "LG",
-     "era": 6.75,
-     "ip": 8.0,
+     "era": 2.38,
+     "ip": 11.3,
      "games": 2
     },
     "recent": {
-     "era": 5.87,
-     "whip": 1.57,
-     "ip": 23.0,
+     "era": 1.41,
+     "whip": 0.84,
+     "ip": 32.0,
      "starts": 5,
      "asStarter": 5
     }
@@ -202,20 +202,19 @@
    "opp": 4.663
   },
   "form": {
-   "lg": "승승패승승",
-   "opp": "패승승패패"
+   "lg": "승승승패승",
+   "opp": "패패승승패"
   },
   "h2h": {
-   "w": 8,
+   "w": 9,
    "l": 4,
    "d": 1,
-   "games": 13
+   "games": 14
   }
  },
  "warnings": [
-  "최승용의 LG전 표본은 8.0이닝(2경기)뿐 — 상대 ERA를 크게 축소 적용",
-  "LG 선발 김윤식은 등판당 1.1이닝(27경기)로 불펜/임시 선발 패턴 — 소화 이닝 불확실",
-  "김윤식의 두산전 표본은 2.7이닝(3경기)뿐 — 상대 ERA를 크게 축소 적용"
+  "LG 선발 박시원은 등판당 1.5이닝(24경기)로 불펜/임시 선발 패턴 — 소화 이닝 불확실",
+  "박시원의 두산전 표본은 2.3이닝(3경기)뿐 — 상대 ERA를 크게 축소 적용"
  ],
  "starballs": 1,
  "goal": 7,
