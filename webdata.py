@@ -178,11 +178,38 @@ def build_today(ctx: S.GameContext, pred: S.Prediction, picks: list) -> dict:
         return d
 
     park_raw = S.PARK_HR_FACTOR.get(ctx.stadium)
+    # 학습 모델이 붙은 문항에 확신도·목표 구간을 실어 보낸다.
+    # 이게 없으면 화면에서 '오늘은 믿을 만한 날인가' 를 알 수 없다.
+    lr = getattr(pred, "learned", None) or {}
+    meta = lr.get("meta") or {}
+    for m in missions:
+        if m["key"] in (lr.get("applied") or []):
+            m["model"] = "learned"
+        if m["key"] == "outcome" and meta:
+            if meta.get("confidence"):
+                m["confidence"] = meta["confidence"]
+            if meta.get("tierAccuracy") is not None:
+                m["tierAccuracy"] = meta["tierAccuracy"]
+            if meta.get("band"):
+                m["band"] = meta["band"]
+                m["bandAccuracy"] = meta.get("bandAccuracy")
+
     combo = pred.combo or {}
     hist = _history()
 
+    model_info = None
+    try:
+        import outcome_infer as OI
+        om = OI.load_model()
+        if om and (lr.get("applied")):
+            model_info = {"overall": (om.get("confidence") or {}).get("overall"),
+                          "validation": om.get("validation")}
+    except Exception:
+        model_info = None
+
     return {
         "generated": datetime.now(S.KST).isoformat(timespec="seconds"),
+        "outcomeSkill": model_info,
         "game": {
             "date": ctx.game_date, "time": ctx.start_time,
             "stadium": ctx.stadium,

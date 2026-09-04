@@ -753,6 +753,7 @@ class Prediction:
     modal_score: tuple
     drivers: list
     confidence: str
+    learned: Optional[dict] = None
     # 세 미션 동시 적중을 최대화하는 조합 (스타볼 지급 조건)
     combo: Optional[dict] = None
 
@@ -1510,6 +1511,7 @@ def predict(ctx: GameContext, n_sim: int = N_SIM, seed: int = SEED,
     if use_learned:
         _lp = _learned_probs(ctx)
         learned_meta = _lp.pop("_meta", None)
+        learned_info = {"applied": [], "meta": learned_meta}
         for key, fresh in _lp.items():
             old = probs.get(key) or {}
             arr = sim_labels.get(key)
@@ -1521,6 +1523,7 @@ def predict(ctx: GameContext, n_sim: int = N_SIM, seed: int = SEED,
                     sim_w[arr == lbl] *= p_new / p_old
             before = max(old, key=old.get) if old else None
             probs[key] = dict(fresh)
+            learned_info["applied"].append(key)
             after = max(fresh, key=fresh.get)
             if before and before != after:
                 learned_note.append(f"{key}: {before} → {after}")
@@ -1622,6 +1625,7 @@ def predict(ctx: GameContext, n_sim: int = N_SIM, seed: int = SEED,
         p_win=p_win, p_draw=p_draw, p_lose=p_lose,
         modal_score=(int(modal[0]), int(modal[1])),
         drivers=drivers, confidence=confidence, combo=combo,
+        learned=(learned_info if use_learned else None),
     )
 
 
