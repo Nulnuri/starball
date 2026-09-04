@@ -19,6 +19,11 @@ on:
   # Actions 탭에서 손으로 눌러 즉시 실행할 수 있게 해둔다.
   # 처음 설정한 뒤 이걸로 한 번 테스트하는 것을 권한다.
   workflow_dispatch:
+    inputs:
+      notify:
+        description: '알림도 실제로 보낼까요? (배포·검증만 할 거면 그대로 두세요)'
+        type: boolean
+        default: false
 
 # 동시에 두 번 돌아 알림이 중복 발송되는 것을 막는다.
 concurrency:
@@ -85,9 +90,13 @@ jobs:
           echo "토픽 Secret 확인됨 (${#NTFY_TOPIC}자)"
 
       - name: 마감 임박 알림
+        # 손으로 돌린 실행에서는 기본적으로 보내지 않는다.
+        # 코드를 고칠 때마다 검증하려고 workflow_dispatch 를 돌렸는데, 그때마다
+        # 실제 알림이 나갔다. 2026-09-04 하루에 같은 알림을 다섯 번 보냈다.
+        # 지인에게 공유한 뒤였다면 모두에게 다섯 번씩 갔을 것이다.
         # 아침 실행(01:00 UTC)이 아닐 때만 돈다. 구간 밖이면 스크립트가
         # 스스로 건너뛰므로 여기서 시각을 따로 따지지 않는다.
-        if: github.event.schedule != '0 1 * * *'
+        if: (github.event.schedule != '0 1 * * *') && (github.event_name != 'workflow_dispatch' || inputs.notify)
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: |
@@ -95,19 +104,27 @@ jobs:
           echo "마감 임박 알림 단계 완료"
 
       - name: 마감 임박 웹 푸시 (지인용)
+        # 손으로 돌린 실행에서는 기본적으로 보내지 않는다.
+        # 코드를 고칠 때마다 검증하려고 workflow_dispatch 를 돌렸는데, 그때마다
+        # 실제 알림이 나갔다. 2026-09-04 하루에 같은 알림을 다섯 번 보냈다.
+        # 지인에게 공유한 뒤였다면 모두에게 다섯 번씩 갔을 것이다.
         # ntfy 는 내가 쓰는 채널이고 이쪽은 웹앱 구독자용이다. 둘은 독립이라
         # 한쪽이 실패해도 다른 쪽은 가야 한다.
         # 경기 1~3시간 전이 아니면 스크립트가 스스로 건너뛴다.
         continue-on-error: true
-        if: github.event.schedule != '0 1 * * *'
+        if: (github.event.schedule != '0 1 * * *') && (github.event_name != 'workflow_dispatch' || inputs.notify)
         env:
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           PUSH_SEND_SECRET: ${{ secrets.PUSH_SEND_SECRET }}
         run: python push_send.py --site "$SITE_URL" --reminder
 
       - name: 예측 실행 및 푸시 발송
+        # 손으로 돌린 실행에서는 기본적으로 보내지 않는다.
+        # 코드를 고칠 때마다 검증하려고 workflow_dispatch 를 돌렸는데, 그때마다
+        # 실제 알림이 나갔다. 2026-09-04 하루에 같은 알림을 다섯 번 보냈다.
+        # 지인에게 공유한 뒤였다면 모두에게 다섯 번씩 갔을 것이다.
         # 아침 실행에서만 전체 예측을 보낸다.
-        if: github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '0 1 * * *' || inputs.notify
         env:
           # 저장소 Settings → Secrets and variables → Actions 에 등록한 값.
           # 등록하지 않으면 스크립트 기본 토픽으로 발송된다.
@@ -169,11 +186,15 @@ jobs:
         run: python make_ics.py --site "$SITE_URL"
 
       - name: 아침 웹 푸시 (지인용)
+        # 손으로 돌린 실행에서는 기본적으로 보내지 않는다.
+        # 코드를 고칠 때마다 검증하려고 workflow_dispatch 를 돌렸는데, 그때마다
+        # 실제 알림이 나갔다. 2026-09-04 하루에 같은 알림을 다섯 번 보냈다.
+        # 지인에게 공유한 뒤였다면 모두에게 다섯 번씩 갔을 것이다.
         # webdata 뒤에 둔다. 그래야 방금 계산한 today.json 을 보낸다.
         # 앞에 두면 어제 값을 보내고, 스크립트가 날짜를 확인해 아무것도
         # 보내지 않는 편이 낫지만 그러면 알림이 하루 빠진다.
         continue-on-error: true
-        if: always() && (github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch')
+        if: always() && (github.event.schedule == '0 1 * * *' || inputs.notify)
         env:
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           PUSH_SEND_SECRET: ${{ secrets.PUSH_SEND_SECRET }}
