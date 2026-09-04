@@ -343,6 +343,42 @@ def test_probability_sources():
         assert OI.load_hr_model(), "홈런을 학습 출처로 선언했는데 계수 파일이 없다"
 
 
+def test_no_duplicate_park_source():
+    """구장 팩터의 출처가 하나인지 본다.
+
+    한때 네 곳에 있었다 — starball_predictor 상수, train_outcome 상수,
+    park_factors.json, 그리고 기록에서 계산하는 함수. 2025 신규 대전에서
+    상수(0.861)와 실제(1.07)가 24% 어긋났다. 2027 신규 잠실에서 같은 일이
+    나면 홈런 예측이 시즌 내내 틀린다.
+
+    새로 상수를 적어두면 여기서 걸린다.
+    """
+    assert not T.PARK_FALLBACK, (
+        "train_outcome 에 구장 팩터 상수가 다시 생겼다. "
+        "park_hr_factors() 가 기록에서 계산하게 두라")
+
+    import os
+    if not os.path.exists("gamelog_2026.json"):
+        return
+    import json
+    import starball_predictor as S
+
+    with open("gamelog_2026.json", encoding="utf-8") as f:
+        cur = json.load(f).get("games") or []
+    prior = None
+    if os.path.exists("gamelog_2025.json"):
+        with open("gamelog_2025.json", encoding="utf-8") as f:
+            prior = T.park_hr_factors(json.load(f).get("games") or [])
+    want = T.park_hr_factors(cur, prior=prior)
+    if not want:
+        return
+    for k, v in want.items():
+        got = S.PARK_HR_FACTOR.get(k)
+        assert got is not None and abs(got - v) < 1e-9, (
+            f"{k}: 예측기 {got} vs 기록 계산 {v}. "
+            f"구장 팩터가 두 곳에서 다르게 만들어지고 있다")
+
+
 # ── 러너 ──────────────────────────────────────────────────────────────
 
 def main() -> int:

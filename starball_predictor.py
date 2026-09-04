@@ -281,7 +281,35 @@ PARK_FACTOR_FILE = os.path.join(
 
 
 def _load_park_factors() -> None:
-    """park_factors.json 이 있으면 내장값 위에 덮어쓴다."""
+    """구장 팩터를 채운다. **경기 로그에서 계산한 값이 최우선이다.**
+
+    같은 사실이 네 곳에 있었다 — 이 파일의 상수, train_outcome 의 상수,
+    park_factors.json, 그리고 기록에서 계산하는 함수. 2025 신규 대전에서
+    상수(0.861)와 실제(1.07)가 24% 어긋난 것도 그 탓이다.
+
+    이제 순서가 하나다: 경기 로그 → park_factors.json → 내장 중립값.
+    신규 구장이 생겨도 기록만 쌓이면 저절로 맞는 값이 된다.
+    """
+    try:
+        import train_outcome as _T
+        year = today_kst().year
+        path = f"gamelog_{year}.json"
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                games = json.load(f).get("games") or []
+            prior = None
+            prev = f"gamelog_{year - 1}.json"
+            if os.path.exists(prev):
+                with open(prev, encoding="utf-8") as f:
+                    prior = _T.park_hr_factors(json.load(f).get("games") or [])
+            got = _T.park_hr_factors(games, prior=prior)
+            if got:
+                PARK_HR_FACTOR.update(got)
+                _load_bullpen()
+                return
+    except Exception as e:
+        print(f"경기 로그로 구장 팩터를 계산하지 못했습니다({e})", file=sys.stderr)
+
     if not os.path.exists(PARK_FACTOR_FILE):
         return
     try:
@@ -294,6 +322,19 @@ def _load_park_factors() -> None:
     except Exception as e:
         print(f"park_factors.json 을 읽지 못했습니다({e}) — 중립값 사용",
               file=sys.stderr)
+
+
+def _load_bullpen() -> None:
+    """불펜 RA9 만 파일에서 읽는다(구장 팩터는 기록에서 계산했다)."""
+    if not os.path.exists(PARK_FACTOR_FILE):
+        return
+    try:
+        with open(PARK_FACTOR_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+        BULLPEN_RA9.update({k: float(v)
+                            for k, v in (data.get("bullpen_ra9") or {}).items()})
+    except Exception:
+        pass
 
 # ── 스타볼 문항 정의 ─────────────────────────────────────────────────────────
 # 스타볼 문항은 경기마다 바뀐다. 실제 폼과 다르면 여기만 고치면 된다.
