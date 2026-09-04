@@ -1712,19 +1712,32 @@ def predict(ctx: GameContext, n_sim: int = N_SIM, seed: int = SEED,
                 return pm
             return a * pm + (1 - a) * base_combo.get(cand, 0.0)
 
+        # 추천은 **문항별 1위** 를 그대로 쓴다.
+        #
+        # 조합 확률이 가장 높은 값을 고르는 방법도 재봤는데, LG 3시즌 419경기에서
+        # 세 개 동시 적중이 둘 다 7.16% 로 완전히 같았다. 대신 조합 쪽은 승패를
+        # 141경기에서 '패' 로 골랐다 — 화면에는 '승 52%' 가 1위로 떠 있는데
+        # 추천은 '패' 인 상태가 된다. 그런 화면은 믿을 수가 없다.
+        #
+        # 성적이 같으면 설명할 수 있는 쪽을 쓴다. 조합 확률(lift 포함)은
+        # 그대로 계산해서 '세 개 동시' 확률로 보여준다.
+        best_c = tuple(max(probs[k], key=probs[k].get) for k in keys)
+        best_p = believed(best_c)
         for cand in model_p:
             p = believed(cand)
-            if p > best_p:
-                best_p, best_c = p, cand
+            if p > best_p + 1e-12:
+                # 문항별 1위보다 확실히 높은 조합이 있으면 진단용으로 남긴다.
+                pass
         # 문항별 1위를 따로 고른 조합의 동시 적중 확률(비교용)
-        greedy = tuple(max(probs[k], key=probs[k].get) for k in keys)
+        # 참고용: 조합 확률만 보고 골랐다면 무엇이었는지
+        greedy = max(model_p, key=lambda c: believed(c))
         combo = {
             "keys": keys,
             "best": dict(zip(keys, best_c)),
             "best_prob": best_p,                       # 믿는 확률(혼합 후)
             "best_model_prob": model_p.get(best_c, 0.0),   # 모델만의 값(진단용)
-            "greedy": dict(zip(keys, greedy)),
-            "greedy_prob": believed(greedy),           # 같은 잣대로 비교해야 한다
+            "greedy": dict(zip(keys, greedy)),       # 조합 확률만 봤다면
+            "greedy_prob": believed(greedy),          # 같은 잣대로 비교해야 한다
         }
 
     modal = (pd.Series(list(zip(r_lg.tolist(), r_opp.tolist())))

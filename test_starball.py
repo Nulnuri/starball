@@ -143,11 +143,13 @@ def test_worse_opposing_bullpen_helps_lg():
 
 
 def test_combo_beats_greedy_under_same_yardstick():
-    """고른 조합이 버린 조합보다 표시 확률이 낮으면 안 된다.
+    """추천이 화면의 문항별 1위와 같아야 한다.
 
-    선택은 기저 혼합 후 확률로 하면서 보고는 모델만의 확률로 하던 버그가 있었다.
-    화면에 '13.0%' 라고 띄운 조합보다 안 고른 조합이 더 높아 보이는 상황이었다.
-    입력을 흔들어도 뒤집히지 않아야 한다.
+    **규칙이 2026-09-04 에 바뀌었다.** 예전에는 조합 확률이 가장 높은 값을
+    골랐다. 그러면 화면에 '승 52%' 가 1위인데 추천은 '패' 인 상태가 된다.
+
+    LG 3시즌 419경기에서 두 방식의 세 개 동시 적중이 7.16% 로 완전히
+    같았다. 성적이 같으면 설명할 수 있는 쪽을 쓴다.
     """
     import copy, random
     random.seed(11)
@@ -158,9 +160,12 @@ def test_combo_beats_greedy_under_same_yardstick():
             for k in ("offenseRun", "defenseR", "offenseHr", "defenseHr",
                       "offenseHit", "defenseHit", "offenseKk", "defenseKk"):
                 t[k] = max(0, int(t[k] * random.uniform(0.4, 1.8)))
-        c = S.predict(S.context_from_fixture(s), n_sim=6000,
-                  use_learned=False).combo
-        assert c["best_prob"] >= c["greedy_prob"] - 1e-9,             f"best {c['best_prob']} < greedy {c['greedy_prob']}"
+        pred = S.predict(S.context_from_fixture(s), n_sim=6000,
+                         use_learned=False)
+        c = pred.combo
+        for k, v in (c["best"] or {}).items():
+            top = max(pred.probs[k], key=pred.probs[k].get)
+            assert v == top, f"{k}: 추천 {v} 인데 화면 1위는 {top}"
         assert 0.0 <= c["best_prob"] <= 1.0
 
 
@@ -169,9 +174,12 @@ def test_run_and_hr_are_correlated():
     ctx = S.context_from_fixture(_snap())
     pred = S.predict(ctx, n_sim=60000, use_learned=False)
     combo = pred.combo
-    # 상관이 살아있으면 조합 최적해와 문항별 1위가 갈릴 수 있어야 한다
-    assert combo is not None and combo["best_prob"] >= combo["greedy_prob"], \
-        "조합 최적해가 그리디보다 나빠질 수 없다"
+    # 상관이 살아있으면 '조합 확률만 보고 고른 값' 이 문항별 1위와 갈릴 수
+    # 있다. 그 차이가 있다는 것 자체가 상관이 반영됐다는 증거다.
+    # (추천은 문항별 1위를 쓴다 — 위 테스트 참고)
+    assert combo is not None
+    msg = "조합 확률만 본 값이 문항별 1위보다 낮을 수 없다"
+    assert combo["greedy_prob"] >= combo["best_prob"] - 1e-9, msg
 
 
 def test_park_factor_moves_home_runs():

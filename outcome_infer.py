@@ -289,17 +289,52 @@ def predict_outcome(model: dict, games: list, tm: str, op: str, is_home: bool,
 
     # 팀 승률 쪽으로 당긴다. 강팀(LG)에서 모델만 쓰면 '항상 승' 보다 나쁘다.
     raw = dict(zip(model["classes"], probs))
+    # 홈 보정을 쓸지도 학습 때 잰다. 강팀에서는 원정 경기 확률을 0.5 아래로
+    # 밀어 '패' 를 만들어 손해였다(LG 3시즌 모두 '항상 승' 이 나았다).
+    _dev = model.get("deviation") or {}
+    _edge = HOME_EDGE if _dev.get("fallback") != "winrate" else 0.0
     pw = min(0.95, max(0.05,
                        f.get("my_win", 0.5)
-                       + (HOME_EDGE if f.get("home") else -HOME_EDGE)))
-    prior = {"승": pw * (1 - DRAW_SHARE), "무": DRAW_SHARE,
-             "패": (1 - pw) * (1 - DRAW_SHARE)}
+                       + (_edge if f.get("home") else -_edge)))
+    # '승' 으로 볼 기준선도 학습 때 잰다. 0.5 로 두면 시즌 초 일시적 부진에
+    # 휘둘려 '패' 를 고르고, 강팀에서는 그때마다 손해였다.
+    _cut = _dev.get("fallbackCut", 0.5)
+    _pw = pw if _cut == 0.5 else (0.55 if pw >= _cut else 0.45)
+    prior = {"승": _pw * (1 - DRAW_SHARE), "무": DRAW_SHARE,
+             "패": (1 - _pw) * (1 - DRAW_SHARE)}
     a = OUTCOME_BLEND
     mixed = {k: a * raw.get(k, 0.0) + (1 - a) * prior.get(k, 0.0) for k in raw}
     tot = sum(mixed.values()) or 1.0
     mixed = {k: v / tot for k, v in mixed.items()}
 
+    # 팀 전력이 가리키는 답에서 벗어나도 되는지, 학습 때 잰 규칙을 따른다.
+    #
+    # LG 처럼 강한 팀은 그냥 자주 이긴다. 모델이 '패' 라고 할 때조차 실제로는
+    # 61% 를 이겼다(3시즌 419경기). 그런 팀에서는 벗어날 때마다 손해다.
+    # 문턱을 상수로 박지 않고 train_outcome.deviation_rule 이 재므로,
+    # LG 가 중위권이 되면 문턱이 생기고 모델이 다시 쓰인다.
+    dev = model.get("deviation") or {}
+    prior_pick = max(prior, key=prior.get)
+    model_pick = max(raw, key=raw.get)
+    forced = None
+    if model_pick != prior_pick:
+        th = dev.get("threshold")
+        if th is None or raw.get(model_pick, 0.0) < th:
+            forced = prior_pick
+            # 고른 값이 1위가 되도록 최소한만 조정한다. 확률을 뒤집지 않고
+            # 순서만 맞춘다 — 화면의 숫자와 추천이 어긋나면 못 믿는다.
+            top = max(mixed.values())
+            if mixed.get(prior_pick, 0.0) < top:
+                mixed = dict(mixed)
+                bump = top - mixed[prior_pick] + 1e-4
+                mixed[prior_pick] += bump
+                tot2 = sum(mixed.values()) or 1.0
+                mixed = {k: v / tot2 for k, v in mixed.items()}
+
     out = {c: round(p, 4) for c, p in mixed.items()}
+    if forced:
+        out["forcedByTeamStrength"] = True
+        out["deviationNote"] = dev.get("note")
     out["modelOnly"] = {c: round(p, 4) for c, p in raw.items()}
     out["teamPrior"] = {c: round(p, 4) for c, p in prior.items()}
     probs = list(mixed.values())

@@ -658,6 +658,87 @@ def confidence_tiers(rows: list, C: float) -> dict:
     return out
 
 
+def deviation_rule(rows: list, C: float, team: str = "LG") -> dict:
+    """이 팀에 대해 모델이 '팀 전력이 가리키는 답' 에서 벗어나도 되는가.
+
+    강팀은 그냥 자주 이긴다. 경기별 예측 기술이 그보다 약하면, 모델이
+    다른 답을 낼 때마다 손해다. 실측(LG 3시즌 419경기):
+
+        모델 패 확률 50% 이상 80경기 → 실제 패 40.0%
+        모델 패 확률 55% 이상 31경기 → 실제 패 38.7%
+
+    가장 확신할 때조차 LG 가 61% 이겼다. 즉 벗어날 문턱이 없다.
+
+    그래서 문턱을 상수로 박지 않고 여기서 잰다. 벗어나서 이득인 구간이
+    없으면 threshold 를 None 으로 두고, 운영은 팀 전력 쪽 답을 따른다.
+    LG 가 중위권이 되면 문턱이 생기고 모델이 다시 쓰인다.
+    """
+    import numpy as np
+
+    seg = [r for r in rows if r.get("team") == team]
+    if len(seg) < 120:
+        return {"team": team, "threshold": None, "n": len(seg),
+                "note": "표본 부족"}
+
+    # 그 시점까지로 학습해 다음 경기를 맞히는 방식으로 확률을 모은다.
+    newest = max(r.get("season", 0) for r in rows)
+    past = [r for r in rows if r.get("season", newest) != newest]
+    cur = [r for r in rows if r.get("season", newest) == newest]
+    probs = []
+    for frac in (0.5, 0.65, 0.8):
+        cut = int(len(cur) * frac)
+        tr, te = past + cur[:cut], [r for r in cur[cut:] if r.get("team") == team]
+        if len(te) < 10:
+            continue
+        sc, m = fit(tr, C)
+        P = m.predict_proba(sc.transform(core_matrix(te)))
+        cls = list(m.classes_)
+        for i, r in enumerate(te):
+            probs.append((float(P[i][cls.index(2)]) if 2 in cls else 0.0,
+                          r["y"]))
+    if len(probs) < 40:
+        return {"team": team, "threshold": None, "n": len(probs),
+                "note": "표본 부족"}
+
+    best = None
+    for th in (0.50, 0.55, 0.60, 0.65, 0.70):
+        sel = [y for p, y in probs if p >= th]
+        if len(sel) < 15:
+            continue
+        lose = sum(1 for y in sel if y == 2) / len(sel)
+        # 벗어나서 이득이려면, 그 구간에서 실제로 지는 비율이 절반을 넘어야 한다.
+        if lose > 0.5 and (best is None or lose > best["accuracy"]):
+            best = {"threshold": th, "games": len(sel),
+                    "accuracy": round(lose, 4)}
+
+    # 벗어나지 않을 때 무엇을 고를지도 잰다.
+    #
+    # 홈 보정을 넣으면 원정 경기에서 확률이 0.5 아래로 밀려 '패' 가 된다.
+    # LG 처럼 강한 팀에서는 그게 손해였다(3시즌 모두 '항상 승' 이 나음).
+    # 어느 쪽이 나은지 상수로 정하지 않고 여기서 잰다.
+    hi = FEATURES.index("home")
+    wi = FEATURES.index("my_win")
+    ways = {}
+    for label, edge in (("winrate", 0.0), ("winrate+home", 0.035)):
+        for cut in (0.50, 0.45, 0.40, 0.35, 0.00):
+            hit = 0
+            for r in seg:
+                pw = r["feat"][wi] + (edge if r["feat"][hi] else -edge)
+                hit += (r["y"] == (0 if pw >= cut else 2))
+            ways[f"{label}@{cut:.2f}"] = round(hit / len(seg) * 100, 1)
+    fallback = max(ways, key=ways.get)
+
+    return {"team": team, "n": len(probs),
+            "threshold": best["threshold"] if best else None,
+            "detail": best,
+            "fallback": fallback.split("@")[0],
+            "fallbackCut": float(fallback.split("@")[1]),
+            "fallbackScores": dict(sorted(ways.items(),
+                                          key=lambda kv: -kv[1])[:4]),
+            "note": ("벗어날 값어치 있음" if best
+                     else "어떤 문턱에서도 벗어나면 손해 — 팀 전력 쪽을 따른다")}
+
+
 def rows_by_season(paths: list) -> list:
     """시즌마다 따로 펼쳐 합친다.
 
@@ -836,6 +917,7 @@ def main() -> int:
         # 순서는 안 바뀌므로 고르는 값은 같고, 말하는 확률만 정직해진다.
         "temperature": temperature,
         "confidence": confidence_tiers(rows, args.C),
+        "deviation": deviation_rule(rows, args.C),
         "validation": {
             "splits": n,
             "base": round(sum(v["base"]) / n * 100, 1) if n else None,
