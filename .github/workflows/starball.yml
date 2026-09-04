@@ -54,6 +54,21 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      - name: 테스트
+        # 규칙 테스트(학습↔운영 일치, 문항별 출처, 구장 팩터 중복 금지)가
+        # 여기서 돌아야 의미가 있다. 로컬에서만 돌리면 아무도 안 지킨다.
+        # 실패하면 잡을 세운다 — 틀린 값을 배포하는 것보다 낫다.
+        run: |
+          fail=0
+          for t in test_starball test_push test_train; do
+            echo "── $t ──"
+            python $t.py || fail=1
+          done
+          if [ $fail -ne 0 ]; then
+            echo "::error::테스트 실패. 예측을 배포하지 않습니다."
+            exit 1
+          fi
+
       - name: 알림 토픽 확인
         # 공개 저장소라 코드에 박힌 기본 토픽은 누구나 볼 수 있다.
         # 그 토픽으로 발송하면 남이 가짜 알림을 보낼 수 있으므로,
@@ -126,8 +141,17 @@ jobs:
         run: |
           set +e
           python webdata.py both
-          echo "webdata 종료 코드: $?"
-          exit 0
+          code=$?
+          set -e
+          echo "webdata 종료 코드: $code"
+          # 0 = 정상(경기 없는 날 포함), 75 = 선발 예고 전. 그 밖은 진짜 실패다.
+          # 예전에는 무조건 exit 0 이라, webdata 가 죽어도 초록불이 뜨고
+          # 앱은 낡은 데이터를 계속 보여줬다. 아무도 알 수 없었다.
+          case $code in
+            0)  ;;
+            75) echo "::notice::선발 예고 전이라 예측을 건너뛰었습니다." ;;
+            *)  echo "::error::웹앱 데이터 갱신 실패 (코드 $code)"; exit $code ;;
+          esac
 
       - name: 경기 로그 누적 (내년 학습 재료)
         # 새 경기만 받아 덧붙인다. 요청이 몇 건뿐이라 매일 돌려도 부담이 없다.
@@ -215,6 +239,32 @@ jobs:
             npx --yes wrangler@latest pages project create starball               --production-branch=main
           fi
           npx --yes wrangler@latest pages deploy web             --project-name=starball --branch=main --commit-dirty=true
+
+      - name: 배포 점검
+        # 배포가 끝난 뒤 실제로 오늘 데이터가 올라갔는지 본다.
+        # 단계마다 초록불이어도 화면이 낡아 있을 수 있다 — 실제로 겪었다.
+        continue-on-error: true
+        if: always() && (github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch')
+        run: |
+          python - <<'PY'
+          import json, sys, urllib.request
+          from datetime import datetime, timedelta, timezone
+          KST = timezone(timedelta(hours=9))
+          today = datetime.now(KST).date().isoformat()
+          try:
+              req = urllib.request.Request(
+                  "https://starball-9oj.pages.dev/today.json",
+                  headers={"User-Agent": "Mozilla/5.0"})
+              d = json.load(urllib.request.urlopen(req, timeout=25))
+          except Exception as e:
+              print(f"::warning::배포 점검 실패({e})")
+              sys.exit(0)
+          when = (d.get("generated") or "")[:10]
+          date = (d.get("game") or {}).get("date")
+          print(f"올라간 데이터: 경기 {date} · 생성 {when}")
+          if when != today:
+              print(f"::warning::배포된 데이터가 오늘({today}) 것이 아닙니다")
+          PY
 
       - name: 깃헙 페이지에 웹앱 배포
         if: always() && (github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch')
