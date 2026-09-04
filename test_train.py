@@ -311,6 +311,38 @@ def test_serving_features_match_training():
         f"featurize 에 넘기는 인자(prior, parks)가 양쪽에서 같은지 확인할 것")
 
 
+def test_probability_sources():
+    """문항별 확률이 선언한 출처와 실제로 같은지 본다.
+
+    이 프로젝트의 버그 대부분이 '같은 사실을 두 경로로 만든' 탓이었다.
+    시뮬레이션과 학습 모델이 나란히 돌면서 이음매마다 값이 갈렸다(49%p).
+    PROB_SOURCE 표가 규칙이고, 이 테스트가 그 규칙을 강제한다.
+
+    확률만 몰래 갈아끼우고 표를 안 고치면 여기서 걸린다.
+    """
+    import os
+    if not os.path.exists("gamelog_2026.json"):
+        return
+    import starball_predictor as S
+
+    # 선언된 문항이 실제 문항 목록과 맞는가
+    keys = {q["key"] for q in S.STARBALL_QUESTIONS}
+    assert set(S.PROB_SOURCE) == keys, (set(S.PROB_SOURCE), keys)
+
+    # 득실 차는 실측 분포와 정확히 같아야 한다
+    base = S.BASE_RATES.get("margin")
+    assert base, "base_rates.json 의 margin 이 비었다"
+    for k, v in S.PROB_SOURCE.items():
+        assert v in ("learned", "empirical", "simulation"), (k, v)
+
+    # 학습 출처로 선언한 문항에는 계수 파일이 있어야 한다
+    import outcome_infer as OI
+    if S.PROB_SOURCE["outcome"] == "learned":
+        assert OI.load_model(), "승패를 학습 출처로 선언했는데 계수 파일이 없다"
+    if S.PROB_SOURCE["lg_hr"] == "learned":
+        assert OI.load_hr_model(), "홈런을 학습 출처로 선언했는데 계수 파일이 없다"
+
+
 # ── 러너 ──────────────────────────────────────────────────────────────
 
 def main() -> int:

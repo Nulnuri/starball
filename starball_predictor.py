@@ -1253,6 +1253,28 @@ def _combo_lift(keys: list, base_combo: Optional[dict]) -> dict:
     return out
 
 
+# 문항별 확률의 **유일한 출처**. 이 표가 규칙이고, 테스트가 강제한다.
+#
+# 이 프로젝트의 버그 대부분은 '같은 사실을 두 경로로 만든' 탓이었다.
+# 물리 시뮬레이션과 학습 모델이 나란히 돌면서, 둘을 맞추는 이음매마다
+# 값이 갈렸다(최대 49%p). 그래서 문항마다 출처를 하나로 못박는다.
+#
+#   승패    학습 모델 (outcome_model.json) — 실측 57.6%, 시뮬 54.5%
+#   홈런    학습 모델 (hr_model.json)      — 실측 36%,  시뮬 35.4%
+#   득실차  실측 리그 분포 (base_rates)     — 실측 25.3%, 시뮬 24.2%
+#
+# 시뮬레이션은 예측에 쓰지 않는다. 예상 스코어·선발 매치업 같은 표시용과,
+# 조합의 상관 구조를 잡을 때만 쓴다.
+#
+# 새 출처를 붙이고 싶으면 이 표를 고치고 테스트를 통과시켜라. 표를 안 고치고
+# 확률만 갈아끼우면 test_probability_sources 가 잡는다.
+PROB_SOURCE = {
+    "outcome": "learned",
+    "lg_hr": "learned",
+    "margin": "empirical",
+}
+
+
 def _learned_probs(ctx: GameContext) -> dict:
     """학습 모델이 있는 문항의 확률. 없거나 못 만들면 그 문항은 빠진다.
 
@@ -1516,6 +1538,27 @@ def predict(ctx: GameContext, n_sim: int = N_SIM, seed: int = SEED,
     sim_w = np.ones(n_sim)
     learned_note = []
     if use_learned:
+        # ── 득실 차는 실측 리그 분포를 쓴다 ──────────────────────────────
+        # 시뮬레이션이 실측 고정값을 못 이긴다(24.2% vs 25.3%). 매치업으로
+        # 바뀌지도 않는다(어느 축으로 나눠도 1점이 최빈). 그런데 시뮬레이션
+        # 값을 쓰면 그 값과 실측 조합 분포 사이에 또 이음매가 생긴다.
+        #
+        # 이 프로젝트의 버그 대부분이 '같은 사실을 두 경로로 만든' 탓이었다.
+        # 문항별로 가장 나은 출처 하나만 쓴다:
+        #     승패  → 학습 모델    홈런 → 학습 모델    득실차 → 실측 분포
+        # 시뮬레이션은 예상 스코어 같은 표시용으로만 남는다.
+        mb = BASE_RATES.get("margin")
+        if mb and set(mb) == set(probs.get("margin") or {}):
+            arr = sim_labels.get("margin")
+            old_m = probs["margin"]
+            if arr is not None:
+                for lbl, p_new in mb.items():
+                    p_old = old_m.get(lbl, 0.0)
+                    if p_old > 1e-9:
+                        sim_w[arr == lbl] *= p_new / p_old
+            probs["margin"] = dict(mb)
+            learned_note.append("margin: 실측 리그 분포")
+
         _lp = _learned_probs(ctx)
         learned_meta = _lp.pop("_meta", None)
         learned_info = {"applied": [], "meta": learned_meta}
