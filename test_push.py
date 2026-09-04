@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import io
 import sys
 from datetime import datetime, timedelta, timezone
 
@@ -66,7 +67,41 @@ def test_morning_payload_carries_all_three_picks():
     for label in ("승패 맞히기", "득실 차 맞히기", "홈런 수 맞히기"):
         assert label in p["body"], p["body"]
     assert p["url"].startswith("https://x")
-    assert p["tag"] == "starball"
+    # 한때 여기서 고정 tag 를 강제했다. 그래서 날짜 없는 tag 가 시험을
+    # 통과했고, 알림이 매일 어제 것을 덮어쓰는 버그가 살아남았다.
+    assert p["tag"].startswith("starball-"), p["tag"]
+
+
+def test_tag_carries_the_date():
+    """tag 가 날짜 없이 고정이면 새 알림이 알림창의 어제 것을 조용히 덮어쓴다.
+
+    2026-09-04 에 실제로 겪었다. 9/2~9/4 예측이 셋 다 '승·1점·0개' 로 같았고
+    제목에 날짜가 없어서, 오늘 알림이 어제 것을 덮어쓴 뒤에도 화면에는 똑같은
+    글이 한 통 있었다. 발송 기록은 성공이었는데 "오늘 건 안 왔다" 는 신고가
+    왔다. 날짜가 tag 와 제목 양쪽에 있어야 두 통이 나란히 남고 구분된다.
+    """
+    for reminder in (False, True):
+        pl = P.build_payload(_today(), reminder, "https://x")
+        assert "2026-09-01" in pl["tag"], (reminder, pl["tag"])
+        assert pl["tag"] != "starball", "고정 tag 로 돌아갔다"
+        assert "9월 1일" in pl["title"], (reminder, pl["title"])
+
+
+def test_tag_differs_by_day_and_by_kind():
+    """다른 날, 그리고 아침과 마감이 서로를 덮어쓰지 않아야 한다."""
+    a = _today(); b = _today()
+    b["game"]["date"] = "2026-09-02"
+    tags = {P.build_payload(t, r, "https://x")["tag"]
+            for t in (a, b) for r in (False, True)}
+    assert len(tags) == 4, tags
+
+
+def test_service_worker_tag_fallback_is_not_fixed():
+    """sw.js 폴백도 마찬가지다. 서버가 tag 를 못 줬을 때 "starball" 로
+    떨어지면 같은 덮어쓰기가 난다."""
+    js = io.open("web/sw.js", encoding="utf-8").read()
+    assert 'd.tag || "starball"' not in js, "sw.js 폴백이 고정 tag 로 돌아갔다"
+    assert "toISOString" in js.split("tag: d.tag")[1][:120], "폴백에 날짜가 없다"
 
 
 def test_reminder_payload_is_short():

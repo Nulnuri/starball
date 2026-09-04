@@ -76,7 +76,9 @@ self.addEventListener("push", e => {
     badge: "./icon-192.png",
     // 같은 tag 를 쓰면 아침 알림이 마감 알림으로 조용히 교체된다.
     // 알림이 두 개 쌓여 어느 게 최신인지 헷갈리는 것을 막는다.
-    tag: d.tag || "starball",
+    // 서버가 날짜 붙은 tag 를 준다. 못 받았을 때도 날짜로 갈라둔다 —
+    // "starball" 로 고정하면 새 알림이 어제 것을 조용히 덮어쓴다.
+    tag: d.tag || ("starball-" + new Date().toISOString().slice(0, 10)),
     renotify: true,
     data: { url: d.url || "./index.html" },
   }));

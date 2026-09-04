@@ -105,21 +105,33 @@ def build_payload(today: dict, reminder: bool, site: str) -> dict | None:
     away, home = (g["opp"], g["lg"]) if g.get("lgIsHome") else (g["lg"], g["opp"])
     conf = (today.get("joint") or {}).get("confidence", "")
 
+    # 날짜를 제목에 박는다. 없으면 어제 알림과 글자 하나까지 같아진다 —
+    # 예측이 며칠 연속 같게 나오는 일이 실제로 있었고(2026-09-02~04 승·1점·0개),
+    # 그때 "오늘 건 안 왔다" 는 신고를 받았다. 실은 와서 덮어쓴 것이었다.
+    date = g.get("date") or ""
+    md = f"{int(date[5:7])}월 {int(date[8:10])}일" if len(date) >= 10 else ""
+
     if reminder:
-        title = f"⏰ 스타볼 마감 임박 · {picks}"
+        title = f"⏰ {md} 스타볼 마감 임박 · {picks}"
         body = f"{away}@{home} {g.get('time','')} 시작. 아직 입력 안 하셨다면 지금."
     else:
-        title = f"⚾ 오늘의 스타볼 · {picks}"
+        title = f"⚾ {md} 스타볼 · {picks}"
         lines = [f"{away}@{home} {g.get('stadium','')} {g.get('time','')}"
                  + (f" · 신뢰도 {conf}" if conf else "")]
         for m in ms:
-            p = m.get("prob")
+            pr = m.get("prob")
             lines.append(f"{m.get('label','')} → {m.get('pick','')}"
-                         + (f"  {p*100:.0f}%" if isinstance(p, (int, float)) else ""))
-        body = "\n".join(lines)
+                         + (f"  {pr*100:.0f}%" if isinstance(pr, (int, float)) else ""))
+        # 계산 시각을 남긴다. 매크로가 아니라 그날 돌린 결과라는 근거다.
+        gen = (today.get("generated") or "")[11:16]
+        if gen:
+            lines.append(f"({gen} 계산)")
+        body = chr(10).join(lines)
 
+    # tag 가 같으면 알림창에서 이전 알림을 조용히 덮어쓴다. 날짜를 넣어야
+    # 어제 것과 오늘 것이 나란히 남는다. 아침·마감은 목적이 달라 또 나눈다.
     return {"title": title, "body": body, "url": f"{site}/",
-            "tag": "starball"}
+            "tag": f"starball-{date or 'x'}" + ("-r" if reminder else "")}
 
 
 def main() -> int:
