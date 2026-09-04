@@ -119,6 +119,19 @@
   .conf.hi { background: #16321F; color: var(--ok); }
   .conf.band { background: var(--ok); color: #0B1F13; font-weight: 600; }
 
+  /* 근거 */
+  .why { background: var(--surface); border: 1px solid var(--line);
+         border-top: 0; border-radius: 0 0 4px 4px; padding: 9px 14px 11px;
+         margin: -9px 0 0 3px; }
+  .whyrow { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+  .whyrow .wl { flex: 0 0 108px; }
+  .whyrow .wv { flex: 0 0 46px; text-align: right; color: var(--ink-dim); }
+  .wbar { flex-grow: 1; height: 4px; background: var(--surface-2);
+          border-radius: 2px; display: flex; }
+  .wbar i { border-radius: 2px; }
+  .wbar i.up { background: var(--ok); }
+  .wbar i.dn { background: var(--bad); }
+
   .hidden { display: none !important; }
   svg { flex: 0 0 auto; }
 </style>
@@ -197,6 +210,36 @@ function stampRow() {
 
 // 확신도 배지. 문턱과 적중률은 학습 때 실측으로 잰 값이다.
 // '높은 날' 이 실제로 더 잘 맞는다는 걸 숫자로 같이 보여준다.
+// 왜 이 값이 나왔는지. 근거 없이 숫자만 보여주면 믿을 이유가 없다.
+// 각 요인이 얼마나 밀었는지는 모델 계수에서 직접 계산한 값이다.
+function whyRow(m) {
+  const rs = m.reasons || [];
+  if (!rs.length && !m.fixedNote) return "";
+  if (!rs.length) {
+    return `<div class="why"><span class="tiny muted">${esc(m.fixedNote)}</span></div>`;
+  }
+  const max = Math.max(...rs.map(r => Math.abs(r.weight))) || 1;
+  const bars = rs.map(r => {
+    const pos = r.weight > 0;
+    const w = Math.max(6, Math.round(Math.abs(r.weight) / max * 100));
+    return `<div class="whyrow">
+      <span class="tiny muted wl">${esc(r.label)}</span>
+      <span class="tiny num wv">${esc(r.value)}</span>
+      <span class="wbar"><i class="${pos ? "up" : "dn"}" style="width:${w}%"></i></span>
+    </div>`;
+  }).join("");
+  const blend = m.blend
+    ? `<div class="tiny muted" style="margin-top:5px">
+         팀 성적 ${(m.blend.teamWin * 100).toFixed(0)}% 를
+         ${((1 - m.blend.model) * 100).toFixed(0)}% 반영
+         ${m.blend.modelPick !== m.pick
+            ? ` · 모델만 보면 ${esc(m.blend.modelPick)}` : ""}
+       </div>` : "";
+  return `<div class="why">
+    <div class="tiny muted" style="margin-bottom:4px">이 값이 나온 이유</div>
+    ${bars}${blend}</div>`;
+}
+
 function confBadge(m) {
   if (!m.confidence) return "";
   // 목표 구간(70/75/80%)에 드는 날은 그것을 앞세운다. 문턱과 실측치는
@@ -248,7 +291,8 @@ function viewToday() {
           <span class="pick">${esc(m.pick)}</span>
           <span class="num p">${pct(m.prob)}</span>
         </div>
-      </div>`).join("")}
+      </div>
+      ${whyRow(m)}`).join("")}
   </div>
 
   <div class="card pad col" style="gap:10px">

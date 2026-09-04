@@ -146,7 +146,11 @@ def predict_hr(model: dict, games: list, tm: str, op: str, is_home: bool,
     zs = [sum(c * v for c, v in zip(row, x)) + b
           for row, b in zip(model["coef"], model["intercept"])]
     probs = _softmax(zs)
-    return {c: round(p, 4) for c, p in zip(model["classes"], probs)}
+    out = {c: round(p, 4) for c, p in zip(model["classes"], probs)}
+    order = sorted(out, key=out.get, reverse=True)
+    out["reasons"] = reasons(model, f, order[0],
+                             order[1] if len(order) > 1 else order[0])
+    return out
 
 
 def _softmax(zs: list) -> list:
@@ -182,6 +186,57 @@ def tier_accuracy(model: dict, top: float) -> Optional[float]:
         if top >= t.get("threshold", 1.0):
             return t.get("accuracy")
     return (model.get("confidence") or {}).get("overall")
+
+
+# 특징 이름 → 사람이 읽는 말. 화면에 그대로 나간다.
+LABEL = {
+    "home": "홈/원정", "park": "구장",
+    "my_win": "LG 시즌 승률", "op_win": "상대 시즌 승률",
+    "my_form10": "LG 최근 10경기", "op_form10": "상대 최근 10경기",
+    "my_sp_era": "LG 선발 ERA", "op_sp_era": "상대 선발 ERA",
+    "my_sp_recent": "LG 선발 최근 3등판", "op_sp_recent": "상대 선발 최근 3등판",
+    "off_edge": "LG 타선 vs 상대 실점", "def_edge": "상대 타선 vs LG 실점",
+    "h2h_win": "올 시즌 상대전적", "my_hr": "LG 홈런 페이스",
+    "op_hra": "상대 피홈런", "my_hr10": "LG 최근 홈런",
+    "sp_edge": "선발 ERA 차", "my_pyth": "LG 기대승률",
+}
+
+
+def _fmt(name: str, v: float) -> str:
+    """특징 값을 읽기 좋게. 승률은 소수 셋째, ERA 는 둘째."""
+    if name == "home":
+        return "홈" if v >= 0.5 else "원정"
+    if name in ("my_win", "op_win", "my_form10", "op_form10", "h2h_win",
+                "my_pyth", "op_pyth"):
+        return f"{v:.3f}"
+    return f"{v:.2f}"
+
+
+def reasons(model: dict, f: dict, pick: str, runner: str, top_n: int = 4) -> list:
+    """왜 그 값을 골랐는지. 각 특징이 얼마나 밀었는지 계산한다.
+
+    로지스틱 회귀는 '어느 요인이 얼마나 밀었는지' 를 정확히 낼 수 있다.
+    고른 값과 2위의 로그오즈 차이를 특징별로 쪼개면 된다:
+
+        기여 = (계수[고른값] - 계수[2위]) × 표준화한 특징값
+
+    양수면 고른 값 쪽으로 민 것이다. 확률 변화(%p)로 환산해 보여준다.
+    화면에 근거가 없으면 숫자를 믿을 이유도 없다.
+    """
+    try:
+        i_p = model["classes"].index(pick)
+        i_r = model["classes"].index(runner)
+    except (ValueError, KeyError):
+        return []
+    out = []
+    for i, n in enumerate(model["features"]):
+        z = (f.get(n, 0.0) - model["mean"][i]) / (model["scale"][i] or 1.0)
+        w = (model["coef"][i_p][i] - model["coef"][i_r][i]) * z
+        out.append({"key": n, "label": LABEL.get(n, n),
+                    "value": _fmt(n, f.get(n, 0.0)),
+                    "weight": round(w, 4)})
+    out.sort(key=lambda d: -abs(d["weight"]))
+    return out[:top_n]
 
 
 def target_band(model: dict, top: float) -> Optional[dict]:
@@ -256,5 +311,12 @@ def predict_outcome(model: dict, games: list, tm: str, op: str, is_home: bool,
         out["band"] = band["target"]
         out["bandAccuracy"] = band["accuracy"]
         out["bandShare"] = band["share"]
+    order = sorted(mixed, key=mixed.get, reverse=True)
+    out["reasons"] = reasons(model, f, order[0], order[1] if len(order) > 1 else order[0])
+    # 팀 승률 혼합도 근거의 일부다. 감춰두면 왜 이 값인지 설명이 안 된다.
+    out["blend"] = {"model": OUTCOME_BLEND,
+                    "teamWin": round(pw, 3),
+                    "modelPick": max(raw, key=raw.get),
+                    "priorPick": max(prior, key=prior.get)}
     out["source"] = "학습 모델"
     return out

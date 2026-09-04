@@ -1283,14 +1283,21 @@ def _learned_probs(ctx: GameContext) -> dict:
             out["outcome"] = {k: r[k] for k in ("승", "무", "패") if k in r}
             out["_outcome_meta"] = {k: r.get(k) for k in
                                     ("confidence", "tierAccuracy", "band",
-                                     "bandAccuracy", "bandShare")}
+                                     "bandAccuracy", "bandShare",
+                                     "reasons", "blend")}
     hm = OI.load_hr_model()
     if hm:
         r = OI.predict_hr(hm, games, **kw)
         if r:
-            out["lg_hr"] = r
-    return {k: v for k, v in out.items() if not k.startswith("_")} | (
-        {"_meta": out.get("_outcome_meta")} if out.get("_outcome_meta") else {})
+            out["lg_hr"] = {k: v for k, v in r.items() if k != "reasons"}
+            out["_hr_meta"] = {"reasons": r.get("reasons")}
+    meta = {}
+    if out.get("_outcome_meta"):
+        meta["outcome"] = out["_outcome_meta"]
+    if out.get("_hr_meta"):
+        meta["lg_hr"] = out["_hr_meta"]
+    clean = {k: v for k, v in out.items() if not k.startswith("_")}
+    return clean | ({"_meta": meta} if meta else {})
 
 
 def predict(ctx: GameContext, n_sim: int = N_SIM, seed: int = SEED,
@@ -1529,6 +1536,8 @@ def predict(ctx: GameContext, n_sim: int = N_SIM, seed: int = SEED,
                 learned_note.append(f"{key}: {before} → {after}")
         if sim_w.sum() <= 0:
             sim_w = np.ones(n_sim)
+        learned_meta = (learned_meta or {}).get("outcome") if isinstance(
+            learned_meta, dict) and "outcome" in learned_meta else learned_meta
         if learned_meta and learned_meta.get("band"):
             drivers.append(
                 f"오늘은 확신도 {learned_meta['band']:.0f}% 구간이다 — 과거 이 "
@@ -1580,7 +1589,14 @@ def predict(ctx: GameContext, n_sim: int = N_SIM, seed: int = SEED,
                     m &= (sim_labels[k] == v)
                 model_p[cand] = float(sim_w[m].sum() / sim_w.sum())
 
-        a = BASE_RATE_BLEND
+        # 조합 확률에는 기저를 다시 섞지 않는다.
+        #
+        # 예전에는 시뮬레이션에서 센 조합 확률을 실측 조합 분포와 섞었다.
+        # 지금은 model_p 자체가 '모델 주변확률 × 실측 lift' 라서, 여기서 또
+        # 섞으면 실측 분포가 두 번 들어간다. 그 결과 전 구단 평균(절반은
+        # 진다)이 LG 쪽으로 당겨져, 옵션은 '승 55%' 인데 추천은 '패' 가
+        # 나오는 일이 있었다. 이건 LG 스타볼이지 KBO 평균 예측기가 아니다.
+        a = 1.0
 
         def believed(cand: tuple) -> float:
             """이 조합이 맞을 것이라고 우리가 실제로 믿는 확률.

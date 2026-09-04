@@ -183,16 +183,25 @@ def build_today(ctx: S.GameContext, pred: S.Prediction, picks: list) -> dict:
     lr = getattr(pred, "learned", None) or {}
     meta = lr.get("meta") or {}
     for m in missions:
+        mm = meta.get(m["key"]) or {}
         if m["key"] in (lr.get("applied") or []):
             m["model"] = "learned"
-        if m["key"] == "outcome" and meta:
-            if meta.get("confidence"):
-                m["confidence"] = meta["confidence"]
-            if meta.get("tierAccuracy") is not None:
-                m["tierAccuracy"] = meta["tierAccuracy"]
-            if meta.get("band"):
-                m["band"] = meta["band"]
-                m["bandAccuracy"] = meta.get("bandAccuracy")
+        if mm.get("reasons"):
+            m["reasons"] = mm["reasons"]
+        if mm.get("blend"):
+            m["blend"] = mm["blend"]
+        if m["key"] == "outcome":
+            for k in ("confidence", "tierAccuracy", "band", "bandAccuracy"):
+                if mm.get(k) is not None:
+                    m[k] = mm[k]
+
+    # 득실 차는 학습을 안 붙인다. 그 이유도 화면에 밝힌다 — 근거 없이
+    # 매번 같은 값을 내면 사용자는 고장이라고 생각한다.
+    for m in missions:
+        if m["key"] == "margin" and not m.get("reasons"):
+            m["fixedNote"] = ("어떤 매치업이든 1점차가 가장 흔합니다. "
+                              "실제 기록 1,172경기에서 23%로 1위라, "
+                              "이 문항은 매치업으로 바뀌지 않습니다.")
 
     combo = pred.combo or {}
     hist = _history()
