@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-04T11:15:33+09:00",
+ "generated": "2026-09-04T11:36:52+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -242,8 +242,8 @@
   },
   "park": {
    "name": "잠실",
-   "raw": 0.643,
-   "applied": 0.822
+   "raw": 0.7501,
+   "applied": 0.875
   },
   "bullpen": {
    "lg": 5.541,
