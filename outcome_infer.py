@@ -30,6 +30,23 @@ HR_MODEL_FILE = "hr_model.json"
 
 _PRIOR_CACHE: dict = {}
 
+# 모델 확률을 '팀 승률' 쪽으로 얼마나 당길지. 1.0 이면 모델만.
+#
+# **이 도구는 LG 스타볼용이다.** 전 구단 평균으로 최적화하면 LG 에 손해다.
+# 실측(2024~2025 학습 → 2026 검증):
+#
+#     섞는 비율      전체     LG     강팀    중위    약팀
+#     모델만        55.1%  47.3%  51.7%  57.6%  55.1%
+#     모델 0.3      55.8%  59.5%  57.8%  53.4%  56.6%
+#     승률만        55.3%  58.1%  58.3%  52.1%  56.2%
+#
+# 모델은 중위권에서만 이긴다. 강팀은 그냥 자주 이겨서, 경기별 예측 기술보다
+# '이 팀이 세다' 는 사실이 더 세다. LG 는 강팀이므로 승률 쪽에 무게를 둔다.
+# LG 가 약팀이 되면 이 값을 다시 재야 한다 — 중위권이면 모델만 쓰는 게 낫다.
+OUTCOME_BLEND = 0.3
+HOME_EDGE = 0.035        # 홈 어드밴티지(승률 환산). 실측 홈 승률 약 53.5%
+DRAW_SHARE = 0.02        # KBO 무승부 비율
+
 
 def season_prior(date: str) -> Optional[dict]:
     """작년 최종 성적. 학습이 쓰는 것과 **똑같이** 운영에서도 넘겨야 한다.
@@ -207,7 +224,22 @@ def predict_outcome(model: dict, games: list, tm: str, op: str, is_home: bool,
     temp = model.get("temperature") or 1.0
     probs = _softmax([z / temp for z in zs])
 
-    out = {c: round(p, 4) for c, p in zip(model["classes"], probs)}
+    # 팀 승률 쪽으로 당긴다. 강팀(LG)에서 모델만 쓰면 '항상 승' 보다 나쁘다.
+    raw = dict(zip(model["classes"], probs))
+    pw = min(0.95, max(0.05,
+                       f.get("my_win", 0.5)
+                       + (HOME_EDGE if f.get("home") else -HOME_EDGE)))
+    prior = {"승": pw * (1 - DRAW_SHARE), "무": DRAW_SHARE,
+             "패": (1 - pw) * (1 - DRAW_SHARE)}
+    a = OUTCOME_BLEND
+    mixed = {k: a * raw.get(k, 0.0) + (1 - a) * prior.get(k, 0.0) for k in raw}
+    tot = sum(mixed.values()) or 1.0
+    mixed = {k: v / tot for k, v in mixed.items()}
+
+    out = {c: round(p, 4) for c, p in mixed.items()}
+    out["modelOnly"] = {c: round(p, 4) for c, p in raw.items()}
+    out["teamPrior"] = {c: round(p, 4) for c, p in prior.items()}
+    probs = list(mixed.values())
     top = max(probs)
     out["confidence"] = tier_of(model, top)
     out["tierAccuracy"] = tier_accuracy(model, top)
