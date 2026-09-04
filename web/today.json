@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-04T10:21:33+09:00",
+ "generated": "2026-09-04T10:34:27+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -22,13 +22,13 @@
    "n": 1,
    "key": "outcome",
    "label": "승패 맞히기",
-   "pick": "패",
+   "pick": "승",
    "skill": {
     "hit": 53.3,
     "base": 50.9,
     "gain": 2.3
    },
-   "prob": 0.4296,
+   "prob": 0.5525,
    "options": [
     {
      "label": "승",
@@ -44,6 +44,38 @@
     }
    ],
    "model": "learned",
+   "reasons": [
+    {
+     "key": "op_sp_era",
+     "label": "상대 선발 ERA",
+     "value": "2.25",
+     "weight": -0.1788
+    },
+    {
+     "key": "op_win",
+     "label": "상대 시즌 승률",
+     "value": "0.589",
+     "weight": -0.1332
+    },
+    {
+     "key": "my_win",
+     "label": "LG 시즌 승률",
+     "value": "0.565",
+     "weight": 0.1011
+    },
+    {
+     "key": "my_sp_era",
+     "label": "LG 선발 ERA",
+     "value": "3.26",
+     "weight": 0.0847
+    }
+   ],
+   "blend": {
+    "model": 0.3,
+    "teamWin": 0.6,
+    "modelPick": "패",
+    "priorPick": "승"
+   },
    "confidence": "낮음",
    "tierAccuracy": 57.0
   },
@@ -99,7 +131,8 @@
      "label": "9점 이상",
      "prob": 0.0764
     }
-   ]
+   ],
+   "fixedNote": "어떤 매치업이든 1점차가 가장 흔합니다. 실제 기록 1,172경기에서 23%로 1위라, 이 문항은 매치업으로 바뀌지 않습니다."
   },
   {
    "n": 3,
@@ -138,11 +171,19 @@
      "prob": 0.0023
     }
    ],
-   "model": "learned"
+   "model": "learned",
+   "reasons": [
+    {
+     "key": "park",
+     "label": "구장",
+     "value": "0.75",
+     "weight": 0.2758
+    }
+   ]
   }
  ],
  "joint": {
-  "prob": 0.051,
+  "prob": 0.0524,
   "baseline": 0.0555,
   "confidence": "보통"
  },
