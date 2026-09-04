@@ -1,12 +1,12 @@
 {
- "generated": "2026-09-04T12:58:21+09:00",
+ "generated": "2026-09-04T14:02:03+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
    "splits": 7,
-   "base": 48.7,
-   "model": 57.6,
-   "calib_error": 3.2
+   "base": 48.6,
+   "model": 57.5,
+   "calib_error": 3.0
   }
  },
  "game": {
@@ -24,15 +24,15 @@
    "label": "승패 맞히기",
    "pick": "승",
    "skill": {
-    "hit": 57.6,
-    "base": 48.7,
+    "hit": 57.5,
+    "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.5525,
+   "prob": 0.5186,
    "options": [
     {
      "label": "승",
-     "prob": 0.5525
+     "prob": 0.5186
     },
     {
      "label": "무",
@@ -40,7 +40,7 @@
     },
     {
      "label": "패",
-     "prob": 0.4296
+     "prob": 0.4635
     }
    ],
    "model": "learned",
@@ -49,30 +49,30 @@
      "key": "op_sp_era",
      "label": "상대 선발 ERA",
      "value": "2.25",
-     "weight": -0.1788
+     "weight": -0.1795
     },
     {
      "key": "op_win",
      "label": "상대 시즌 승률",
      "value": "0.589",
-     "weight": -0.1332
+     "weight": -0.1316
     },
     {
      "key": "my_win",
      "label": "LG 시즌 승률",
      "value": "0.565",
-     "weight": 0.1011
+     "weight": 0.0997
     },
     {
      "key": "my_sp_era",
      "label": "LG 선발 ERA",
      "value": "3.26",
-     "weight": 0.0847
+     "weight": 0.085
     }
    ],
    "blend": {
     "model": 0.3,
-    "teamWin": 0.6,
+    "teamWin": 0.565,
     "modelPick": "패",
     "priorPick": "승"
    },
@@ -183,9 +183,9 @@
   }
  ],
  "joint": {
-  "prob": 0.0636,
+  "prob": 0.0594,
   "baseline": 0.0555,
-  "confidence": "보통"
+  "confidence": "낮음"
  },
  "score": {
   "lg": 3.5,
