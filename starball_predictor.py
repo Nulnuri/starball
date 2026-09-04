@@ -194,15 +194,33 @@ def _load_base_rates() -> None:
 # 넘는 승패(+2.4%p)조차 그 범위 안이라, 통계적으로 '입증됐다'고 말할 수 없다.
 # 절제 실험(ablation.py) 결과 전체 모델 53.2% vs '항상 홈팀' 51.7% = +1.5%p,
 # 이것도 표준오차 ±2.1%p 안이다.
-QUESTION_SKILL = {
-    # 실측 적중률과 '가장 흔한 값만 찍기' 대비 개선폭(%p).
-    # 2026-09-01 backtest.py, 표본 475경기. 앱의 실제 드롭다운 구조
-    # (득실 차 0~9점이상 10개 · 홈런 0~5개이상 6개) 기준.
-    # 화면에 그대로 띄운다 — 사용자가 문항별로 얼마나 믿을지 스스로 정하게.
-    "outcome": {"hit": 53.3, "base": 50.9, "gain": +2.3},
-    "margin":  {"hit": 22.5, "base": 22.5, "gain": +0.0},
-    "lg_hr":   {"hit": 41.9, "base": 41.9, "gain": +0.0},
-}
+# 문항별 실측 성적. 화면에 그대로 띄운다 — 사용자가 문항별로 얼마나 믿을지
+# 스스로 정하게.
+#
+# **손으로 박지 않는다.** 예전에는 상수로 뒀다가, 물리 모델에서 학습 모델로
+# 바꾼 뒤에도 옛 숫자(승패 53.3%)가 화면에 남아 있었다. 지금은 계수 파일과
+# 기저율에서 읽어오므로, 재학습하면 화면 숫자도 같이 갱신된다.
+QUESTION_SKILL: dict = {}
+
+
+def _load_skill() -> None:
+    """각 문항의 출처에서 실측 성적을 읽어 QUESTION_SKILL 을 채운다."""
+    mb = BASE_RATES.get('margin') or {}
+    if mb:
+        top = max(mb.values()) * 100
+        QUESTION_SKILL['margin'] = {'hit': round(top, 1),
+                                    'base': round(top, 1), 'gain': 0.0}
+    for path, key, base_key in (('outcome_model.json', 'outcome', 'base'),
+                                ('hr_model.json', 'lg_hr', 'fixed')):
+        try:
+            with open(path, encoding='utf-8') as f:
+                v = (json.load(f).get('validation') or {})
+            if v.get('model') is not None and v.get(base_key) is not None:
+                QUESTION_SKILL[key] = {
+                    'hit': v['model'], 'base': v[base_key],
+                    'gain': round(v['model'] - v[base_key], 1)}
+        except (OSError, ValueError, KeyError):
+            pass
 SKILL_THRESHOLD = 2.0
 
 N_SIM = 50_000
@@ -2207,6 +2225,7 @@ def cmd_probe(client: NaverKBO, day: date) -> int:
 _load_park_factors()
 _load_questions()
 _load_base_rates()
+_load_skill()
 
 
 def _positive_int(text: str) -> int:
