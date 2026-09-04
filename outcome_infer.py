@@ -131,7 +131,11 @@ def predict_hr(model: dict, games: list, tm: str, op: str, is_home: bool,
     state = T.state_through(games, before=date)
     # 구장 팩터는 그 시즌 기록에서 계산한다. 하드코딩 값을 쓰면 신규 구장이
     # 생긴 해에 시즌 내내 틀린다(2025 신규 대전에서 실제로 24% 어긋났다).
-    parks = T.park_hr_factors([g for g in games if g.get("date", "") < date])
+    # 사전값(작년 팩터)까지 학습과 똑같이 넘겨야 한다. 이걸 빼먹어서
+    # 홈런 확률이 11%p 어긋나 있었다.
+    _pr = season_prior(date)
+    parks = T.park_hr_factors([g for g in games if g.get("date", "") < date],
+                              prior=(_pr or {}).get("parks"))
     f = T.featurize(state, tm, op, is_home, stadium, my_sp, op_sp, date,
                     strict=False, parks=parks,
                     prior=season_prior(date))
@@ -206,7 +210,11 @@ def predict_outcome(model: dict, games: list, tm: str, op: str, is_home: bool,
     if not model:
         return None
     state = T.state_through(games, before=date)
-    parks = T.park_hr_factors([g for g in games if g.get("date", "") < date])
+    # 사전값(작년 팩터)까지 학습과 똑같이 넘겨야 한다. 이걸 빼먹어서
+    # 홈런 확률이 11%p 어긋나 있었다.
+    _pr = season_prior(date)
+    parks = T.park_hr_factors([g for g in games if g.get("date", "") < date],
+                              prior=(_pr or {}).get("parks"))
     f = T.featurize(state, tm, op, is_home, stadium, my_sp, op_sp, date,
                     strict=False, parks=parks,
                     prior=season_prior(date))

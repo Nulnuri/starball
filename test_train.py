@@ -240,6 +240,77 @@ def test_h2h_takes_hr_from_opponent_side():
             os.chdir(cwd)
 
 
+# ── 학습↔운영 일치 (이 프로젝트에서 가장 비싼 버그) ──────────────────────
+
+def test_serving_features_match_training():
+    """학습과 운영이 **같은 특징 값**을 만들어야 한다.
+
+    이 프로젝트에서 가장 비싼 버그였다. 운영이 사전값(작년 성적)을 넘기지
+    않아 시즌 초 투수 ERA 가 학습 7.86 / 운영 54.00 으로 들어갔고, 확률이
+    49%p 어긋났다. 구장 팩터에서도 같은 일이 났다(11%p). 에러는 나지 않고
+    예측만 틀린다.
+
+    확률이 아니라 특징을 비교한다. 확률로 비교하려면 저장된 계수와 똑같은
+    학습 집합으로 다시 적합해야 하는데, 그걸 틀리면 테스트가 거짓으로
+    실패한다(실제로 그렇게 만들었다가 4.8%p 오탐이 났다).
+
+    경기 로그가 없으면 건너뛴다 — 네트워크는 타지 않는다.
+    """
+    import os
+    if not (os.path.exists("gamelog_2026.json")
+            and os.path.exists("gamelog_2025.json")):
+        return
+    import outcome_infer as OI
+
+    games = T.load("gamelog_2026.json")
+    prior = T.state_through(T.load("gamelog_2025.json"))
+    rows = T.build_rows(games, prior=prior)
+    if len(rows) < 60:
+        return
+    by = {(r["date"], r["team"]): r for r in rows}
+
+    # 운영 쪽이 실제로 부르는 인자 그대로 다시 만든다
+    checked = worst = 0
+    worst_key = None
+    for x in sorted(games, key=lambda g: g.get("date", ""))[-30:]:
+        pitchers = x.get("pitchers") or {}
+
+        def starter(side):
+            for p in (pitchers.get(side) or []):
+                if p.get("started"):
+                    return p
+            return None
+
+        for me, foe, is_home in (("home", "away", True), ("away", "home", False)):
+            r = by.get((x.get("date"), x.get(me)))
+            ms, os_ = starter(me), starter(foe)
+            if not r or not ms or not os_:
+                continue
+            date = x.get("date")
+            pr = OI.season_prior(date)
+            parks = T.park_hr_factors(
+                [g for g in games if g.get("date", "") < date],
+                prior=(pr or {}).get("parks"))
+            f = T.featurize(T.state_through(games, before=date),
+                            x.get(me), x.get(foe), is_home,
+                            x.get("stadium", ""), ms.get("pcode"),
+                            os_.get("pcode"), date, strict=False,
+                            prior=pr, parks=parks)
+            if f is None:
+                continue
+            for k in T.FEATURES:
+                d = abs(f[k] - r["feat"][T.FEATURES.index(k)])
+                if d > worst:
+                    worst, worst_key = d, (date, x.get(me), k, f[k],
+                                           r["feat"][T.FEATURES.index(k)])
+            checked += 1
+
+    assert checked >= 10, f"비교한 경기가 {checked}건뿐이다"
+    assert worst < 1e-6, (
+        f"학습과 운영의 특징이 다르다: {worst_key}. "
+        f"featurize 에 넘기는 인자(prior, parks)가 양쪽에서 같은지 확인할 것")
+
+
 # ── 러너 ──────────────────────────────────────────────────────────────
 
 def main() -> int:

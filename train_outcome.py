@@ -451,13 +451,14 @@ def build_rows(games: list, prior: Optional[dict] = None,
     st = new_state()
     # 그 시즌 기록으로 구장 팩터를 계산한다. 하드코딩 값을 쓰면 신규 구장이
     # 생긴 해에 시즌 내내 틀린 값을 쓴다.
-    if parks is None:
-        # 시즌 전체로 계산하면 미래 경기의 홈런이 들어간다. 운영에서는 그
-        # 시점까지만 쓰므로 학습도 같아야 한다 — 다만 구장 팩터는 시즌
-        # 내내 크게 안 변해서, 표본을 위해 작년 값을 사전값으로 둔 전체
-        # 계산을 쓴다. 승패 모델의 특징에는 park 이 없어 영향이 없고,
-        # 홈런 모델에서만 쓰인다.
-        parks = park_hr_factors(games, prior=(prior or {}).get("parks"))
+    # 구장 팩터는 **그 날짜 이전 경기로만** 계산한다.
+    #
+    # 시즌 전체로 계산하면 미래 경기의 홈런이 들어가고, 운영은 그 시점까지만
+    # 쓰므로 학습과 운영이 갈린다. 실측으로 홈런 확률이 최대 11%p 어긋나고
+    # 추천이 792건 중 143건에서 달랐다. park 은 홈런 모델의 주요 특징이라
+    # 그대로 두면 계속 조용히 틀린다.
+    fixed_parks = parks
+    prior_parks = (prior or {}).get("parks")
     rows = []
     # **날짜 단위로 처리한다.** 같은 날 경기를 하나씩 반영하면, 그날 두 번째
     # 경기가 첫 경기 결과를 보게 된다. 운영에서는 그날 경기를 전부 빼고
@@ -469,8 +470,11 @@ def build_rows(games: list, prior: Optional[dict] = None,
             continue
         by_date.setdefault(g.get("date", ""), []).append(g)
 
+    seen: list = []
     for date in sorted(by_date):
         todays = by_date[date]
+        # 그 날짜 이전 경기까지로 팩터를 만든다. 운영과 같은 조건이다.
+        parks = fixed_parks if fixed_parks is not None else             park_hr_factors(seen, prior=prior_parks)
         for x in todays:
             hs, as_ = x["home_score"], x["away_score"]
             pitchers = x.get("pitchers") or {}
@@ -500,6 +504,7 @@ def build_rows(games: list, prior: Optional[dict] = None,
         # 그날 경기를 전부 featurize 한 뒤에 반영한다
         for x in todays:
             feed(st, x)
+        seen += todays
     return rows
 
 

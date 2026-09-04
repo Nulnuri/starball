@@ -42,48 +42,42 @@ TOP_BUCKET = 5
 LABELS = [f"{k}개" for k in range(TOP_BUCKET)] + [f"{TOP_BUCKET}개 이상"]
 
 
-def hr_rows(games: list, prior=None, parks=None) -> list:
-    """홈런 학습용 표본. 특징은 승패 모델과 같은 featurize 를 쓴다.
+def hr_targets(games: list) -> dict:
+    """(날짜, 팀) → 그 경기에서 그 팀이 친 홈런 수 구간.
 
-    사전값(작년 최종 성적)을 반드시 함께 넘긴다. 안 넘기면 개막 3주가
-    표본에서 빠지고, 승패 모델과 특징 정의가 갈린다 — 실제로 그런 상태였다.
+    박스스코어는 투수 기준이라 '상대가 허용한 홈런' 이 우리 홈런이다.
+    이 방향을 뒤집으면 조용히 틀린다.
     """
-    st = T.new_state()
-    if parks is None:
-        parks = T.park_hr_factors(games, prior=(prior or {}).get("parks"))
-    out = []
-    for x in sorted(games, key=lambda g: g.get("date", "")):
-        hs, as_ = x.get("home_score"), x.get("away_score")
-        if hs is None or as_ is None:
+    out = {}
+    for x in games:
+        if x.get("home_score") is None or x.get("away_score") is None:
             continue
         box = x.get("box") or {}
-        pitchers = x.get("pitchers") or {}
-        date = x.get("date", "")
-
-        def starter(side):
-            for p in (pitchers.get(side) or []):
-                if p.get("started"):
-                    return p
-            return None
-
-        for me, foe, is_home in (("home", "away", True), ("away", "home", False)):
-            ms, os_ = starter(me), starter(foe)
-            if not ms or not os_:
-                continue
-            hr = (box.get(foe) or {}).get("hr_allowed")   # 상대가 허용 = 우리 홈런
+        for me, foe in (("home", "away"), ("away", "home")):
+            hr = (box.get(foe) or {}).get("hr_allowed")
             if hr is None:
                 continue
-            f = T.featurize(st, x.get(me), x.get(foe), is_home,
-                            x.get("stadium", ""), ms.get("pcode"),
-                            os_.get("pcode"), date, strict=True, prior=prior,
-                            parks=parks)
-            if f is None:
-                continue
-            out.append({"date": date, "team": x.get(me),
-                        "season": int(str(date)[:4] or 0),
-                        "f": f,
-                        "y": min(int(hr), TOP_BUCKET)})
-        T.feed(st, x)
+            out[(x.get("date", ""), x.get(me))] = min(int(hr), TOP_BUCKET)
+    return out
+
+
+def hr_rows(games: list, prior=None, parks=None) -> list:
+    """홈런 학습용 표본.
+
+    **특징 생성은 train_outcome.build_rows 를 그대로 쓴다.** 여기에 같은
+    로직을 복사해 두면 반드시 갈린다 — 이 프로젝트에서 네 번 겪었다
+    (eval_window, explore_features, 구장 팩터, 같은 날 누출). 여기서는
+    build_rows 가 만든 표본에 홈런 정답만 붙인다.
+    """
+    rows = T.build_rows(games, prior=prior, parks=parks)
+    tgt = hr_targets(games)
+    out = []
+    for r in rows:
+        y = tgt.get((r["date"], r["team"]))
+        if y is None:
+            continue
+        out.append({"date": r["date"], "team": r["team"], "season": r["season"],
+                    "f": dict(zip(T.FEATURES, r["feat"])), "y": y})
     return out
 
 
