@@ -1,30 +1,105 @@
 {
- "updated": "2026-09-03T10:04:43+09:00",
+ "updated": "2026-09-04T08:49:54+09:00",
  "starballs": 1,
  "goal": 7,
- "settled": 16,
+ "settled": 17,
  "allHit": 1,
- "rate": 0.0625,
+ "rate": 0.0588,
  "replayed": 14,
- "live": 2,
+ "live": 3,
  "perMission": {
   "outcome": {
    "label": "승패 맞히기",
    "hit": 10,
-   "total": 16
+   "total": 17
   },
   "margin": {
    "label": "득실 차 맞히기",
-   "hit": 3,
-   "total": 16
+   "hit": 4,
+   "total": 17
   },
   "lg_hr": {
    "label": "홈런 수 맞히기",
    "hit": 4,
-   "total": 16
+   "total": 17
   }
  },
  "games": [
+  {
+   "date": "2026-09-04",
+   "opp": "삼성",
+   "home": true,
+   "picks": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "settled": false,
+   "belief": {
+    "outcome": {
+     "승": 0.4654,
+     "무": 0.0126,
+     "패": 0.522
+    },
+    "margin": {
+     "0점": 0.0777,
+     "1점": 0.1883,
+     "2점": 0.1557,
+     "3점": 0.1281,
+     "4점": 0.1002,
+     "5점": 0.0925,
+     "6점": 0.0734,
+     "7점": 0.0605,
+     "8점": 0.047,
+     "9점 이상": 0.0766
+    },
+    "lg_hr": {
+     "0개": 0.4843,
+     "1개": 0.3269,
+     "2개": 0.1408,
+     "3개": 0.0395,
+     "4개": 0.0056,
+     "5개 이상": 0.0029
+    }
+   },
+   "jointProb": 0.0557,
+   "baseline": 0.0637,
+   "expScore": {
+    "lg": 3.5,
+    "opp": 5.1,
+    "modal": [
+     2,
+     4
+    ]
+   },
+   "starters": {
+    "lg": {
+     "name": "카라스코",
+     "era": 3.26,
+     "spot": false
+    },
+    "opp": {
+     "name": "페덱",
+     "era": 2.25,
+     "spot": false
+    }
+   },
+   "params": {
+    "blend": 0.7,
+    "calib": 0.76,
+    "version": "2026-09-04"
+   },
+   "greedy": {
+    "outcome": "패",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "greedyProb": 0.0529,
+   "actual": null,
+   "hits": null,
+   "earned": null,
+   "score": null
+  },
   {
    "date": "2026-09-03",
    "opp": "두산",
@@ -34,7 +109,7 @@
     "margin": "1점",
     "lg_hr": "0개"
    },
-   "settled": false,
+   "settled": true,
    "belief": {
     "outcome": {
      "승": 0.3691,
@@ -95,10 +170,21 @@
     "lg_hr": "0개"
    },
    "greedyProb": 0.0579,
-   "actual": null,
-   "hits": null,
-   "earned": null,
-   "score": null
+   "actual": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "1개"
+   },
+   "hits": {
+    "outcome": false,
+    "margin": true,
+    "lg_hr": false
+   },
+   "earned": false,
+   "score": {
+    "lg": 1,
+    "opp": 0
+   }
   },
   {
    "date": "2026-09-02",

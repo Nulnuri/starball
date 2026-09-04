@@ -1225,9 +1225,77 @@ def _calibrate(probs: dict) -> dict:
     return {k: u + (v - u) * PROB_CALIBRATION for k, v in probs.items()}
 
 
+def _combo_lift(keys: list, base_combo: Optional[dict]) -> dict:
+    """실측 조합 분포에서 '독립가정 대비 몇 배인지'(lift)를 뽑는다.
+
+    lift = P(조합) / (P(문항1) × P(문항2) × P(문항3))
+
+    1.0 이면 세 문항이 서로 무관하다는 뜻이고, 1보다 크면 함께 잘 나온다는
+    뜻이다. 주변확률은 모델에서, 상관은 여기서 가져와 곱한다.
+
+    표본이 얕은 조합에서 lift 가 튀지 않게 0.4~2.5 로 묶는다.
+    """
+    if not base_combo:
+        return {}
+    marg: dict = {}
+    for cand, p in base_combo.items():
+        for i, v in enumerate(cand):
+            marg.setdefault(i, {})
+            marg[i][v] = marg[i].get(v, 0.0) + p
+    out = {}
+    for cand, p in base_combo.items():
+        ind = 1.0
+        for i, v in enumerate(cand):
+            ind *= marg.get(i, {}).get(v, 0.0)
+        if ind > 1e-9:
+            out[cand] = min(2.5, max(0.4, p / ind))
+    return out
+
+
+def _learned_probs(ctx: GameContext) -> dict:
+    """학습 모델이 있는 문항의 확률. 없거나 못 만들면 그 문항은 빠진다.
+
+    승패와 홈런에만 붙인다. 득실 차는 실제 기록을 어느 축으로 나눠 봐도
+    1점이 최빈이라 고정이 최적이고, 학습을 붙이면 나빠진다(실측).
+    """
+    try:
+        import outcome_infer as OI
+    except ImportError:
+        return {}
+    try:
+        games = OI.T.load(f"gamelog_{str(ctx.game_date)[:4]}.json")
+    except (FileNotFoundError, ValueError):
+        return {}
+
+    lg, opp = ctx.lg, ctx.opp
+    pcode = lambda side: getattr(getattr(side, "starter", None), "pcode", None)
+    kw = dict(tm=lg.code, op=opp.code,
+              is_home=getattr(ctx.home, "code", "") == lg.code,
+              stadium=ctx.stadium, my_sp=pcode(lg), op_sp=pcode(opp),
+              date=str(ctx.game_date))
+
+    out = {}
+    m = OI.load_model()
+    if m:
+        r = OI.predict_outcome(m, games, **kw)
+        if r:
+            out["outcome"] = {k: r[k] for k in ("승", "무", "패") if k in r}
+            out["_outcome_meta"] = {k: r.get(k) for k in
+                                    ("confidence", "tierAccuracy", "band",
+                                     "bandAccuracy", "bandShare")}
+    hm = OI.load_hr_model()
+    if hm:
+        r = OI.predict_hr(hm, games, **kw)
+        if r:
+            out["lg_hr"] = r
+    return {k: v for k, v in out.items() if not k.startswith("_")} | (
+        {"_meta": out.get("_outcome_meta")} if out.get("_outcome_meta") else {})
+
+
 def predict(ctx: GameContext, n_sim: int = N_SIM, seed: int = SEED,
             base_rates: Optional[dict] = None,
-            base_combo: Optional[dict] = None) -> Prediction:
+            base_combo: Optional[dict] = None,
+            use_learned: bool = True) -> Prediction:
     """기대 득점을 산출한 뒤 몬테카를로로 각 문항의 확률을 뽑는다.
 
     점수차·실점 구간은 점추정을 눈대중으로 나누면 틀린다. 음이항 분포로
@@ -1429,6 +1497,46 @@ def predict(ctx: GameContext, n_sim: int = N_SIM, seed: int = SEED,
             arr[m & (arr == None)] = lbl        # noqa: E711 — 객체배열 비교
         sim_labels[q["key"]] = arr
 
+    # ── 학습 모델 반영 ──────────────────────────────────────────────────
+    # 반드시 여기서 갈아끼운다. predict() 밖에서 바꾸면 미션 확률만 학습
+    # 값이 되고 결합 확률은 옛 시뮬레이션 값이 남아, 화면의 두 숫자가
+    # 서로 다른 모델을 말하게 된다(실제로 그런 상태였다).
+    #
+    # 시뮬레이션 표본에 가중치를 줘서 주변확률만 학습 값에 맞춘다.
+    # 이렇게 하면 문항 사이의 상관(크게 이기면 홈런도 많다 같은)은
+    # 시뮬레이션 것을 그대로 쓰면서, 각 문항의 확률은 학습 값이 된다.
+    sim_w = np.ones(n_sim)
+    learned_note = []
+    if use_learned:
+        _lp = _learned_probs(ctx)
+        learned_meta = _lp.pop("_meta", None)
+        for key, fresh in _lp.items():
+            old = probs.get(key) or {}
+            arr = sim_labels.get(key)
+            if arr is None or set(fresh) != set(old):
+                continue
+            for lbl, p_new in fresh.items():
+                p_old = old.get(lbl, 0.0)
+                if p_old > 1e-9:
+                    sim_w[arr == lbl] *= p_new / p_old
+            before = max(old, key=old.get) if old else None
+            probs[key] = dict(fresh)
+            after = max(fresh, key=fresh.get)
+            if before and before != after:
+                learned_note.append(f"{key}: {before} → {after}")
+        if sim_w.sum() <= 0:
+            sim_w = np.ones(n_sim)
+        if learned_meta and learned_meta.get("band"):
+            drivers.append(
+                f"오늘은 확신도 {learned_meta['band']:.0f}% 구간이다 — 과거 이 "
+                f"구간의 실제 적중률 {learned_meta['bandAccuracy']}% "
+                f"(전체 경기의 {learned_meta['bandShare'] * 100:.0f}%만 해당)")
+        if learned_note:
+            drivers.append("학습 모델이 바꾼 값: " + ", ".join(learned_note))
+        p_win = probs.get("outcome", {}).get("승", p_win)
+        p_draw = probs.get("outcome", {}).get("무", p_draw)
+        p_lose = probs.get("outcome", {}).get("패", p_lose)
+
     combo = None
     keys = [q["key"] for q in STARBALL_QUESTIONS if q["key"] in sim_labels]
     if keys:
@@ -1440,11 +1548,34 @@ def predict(ctx: GameContext, n_sim: int = N_SIM, seed: int = SEED,
         # 시뮬레이션에서 뽑히기 때문이다. 그래서 여기서 다시 섞는다.
         best_p, best_c = -1.0, None
         model_p: dict = {}
+
+        # 조합 확률을 실측 상관으로 계산한다.
+        #
+        # 예전에는 시뮬레이션에서 직접 셌는데, 그 상관 구조가 실제와 반대였다.
+        # 실측 4,090 팀-경기에서 '이겼을 때 0홈런' 은 31.1%, '졌을 때' 는
+        # 53.2% 다 — 홈런을 못 치면 지니까 당연하다. 그런데 시뮬레이션은
+        # 이길 때 0홈런이 더 흔하다고 봤다. 그래서 학습 모델이 '패' 라고
+        # 해도 조합은 '승' 을 고르는 일이 생겼다.
+        #
+        # 이제 독립가정에서 출발해 실측 조합 분포의 '들뜸(lift)' 만 얹는다.
+        # 주변확률은 모델(학습 포함) 값, 상관은 실제 기록 — 각자 잘하는 쪽을
+        # 쓴다. 실측에 없는 조합은 lift 1.0(독립)으로 둔다.
+        lift = _combo_lift(keys, base_combo)
         for cand in itertools.product(*options):
-            m = np.ones(n_sim, dtype=bool)
+            ind = 1.0
             for k, v in zip(keys, cand):
-                m &= (sim_labels[k] == v)
-            model_p[cand] = float(m.mean())
+                ind *= probs.get(k, {}).get(v, 0.0)
+            model_p[cand] = ind * lift.get(cand, 1.0)
+        tot = sum(model_p.values())
+        if tot > 0:
+            model_p = {k: v / tot for k, v in model_p.items()}
+        else:
+            # 실측이 없으면 예전처럼 시뮬레이션에서 센다.
+            for cand in itertools.product(*options):
+                m = np.ones(n_sim, dtype=bool)
+                for k, v in zip(keys, cand):
+                    m &= (sim_labels[k] == v)
+                model_p[cand] = float(sim_w[m].sum() / sim_w.sum())
 
         a = BASE_RATE_BLEND
 
@@ -2107,10 +2238,6 @@ def main(argv=None) -> int:
             print(f"스냅샷 저장 → {args.save_fixture}", file=sys.stderr)
 
     pred = predict(ctx, n_sim=args.sims)
-    # 승패는 학습 모델이 있으면 그 값을 쓴다. 여기서 갈아끼우면 이후의
-    # 추천·조합·알림 문구가 전부 같은 값을 쓴다 — 한때 웹앱은 학습 모델,
-    # ntfy 는 옛 모델을 써서 두 채널이 다른 답을 보냈다.
-    use_learned_models(ctx, pred)
     picks = to_starball_choices(pred)
 
     if args.json:

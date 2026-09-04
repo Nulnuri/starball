@@ -28,6 +28,28 @@ import train_outcome as T
 MODEL_FILE = "outcome_model.json"
 HR_MODEL_FILE = "hr_model.json"
 
+_PRIOR_CACHE: dict = {}
+
+
+def season_prior(date: str) -> Optional[dict]:
+    """작년 최종 성적. 학습이 쓰는 것과 **똑같이** 운영에서도 넘겨야 한다.
+
+    이걸 빼먹으면 시즌 초 투수의 ERA 가 축소되지 않는다. 실제로 1/3이닝에
+    자책 2점을 준 투수가 ERA 54.00 으로 들어가서, 학습(7.86)과 운영(54.00)이
+    46%p 어긋났다. 에러는 안 나고 예측만 틀린다 — 가장 잡기 어려운 사고다.
+    """
+    try:
+        year = int(str(date)[:4]) - 1
+    except (TypeError, ValueError):
+        return None
+    if year in _PRIOR_CACHE:
+        return _PRIOR_CACHE[year]
+    try:
+        _PRIOR_CACHE[year] = T.state_through(T.load(f"gamelog_{year}.json"))
+    except (FileNotFoundError, ValueError):
+        _PRIOR_CACHE[year] = None
+    return _PRIOR_CACHE[year]
+
 
 def load_model(path: str = MODEL_FILE) -> Optional[dict]:
     """계수를 읽는다. 없거나 형식이 다르면 None — 부르는 쪽이 옛 모델로 돌아간다.
@@ -94,7 +116,8 @@ def predict_hr(model: dict, games: list, tm: str, op: str, is_home: bool,
     # 생긴 해에 시즌 내내 틀린다(2025 신규 대전에서 실제로 24% 어긋났다).
     parks = T.park_hr_factors([g for g in games if g.get("date", "") < date])
     f = T.featurize(state, tm, op, is_home, stadium, my_sp, op_sp, date,
-                    strict=False, parks=parks)
+                    strict=False, parks=parks,
+                    prior=season_prior(date))
     if f is None:
         return None
     x = [(f[n] - model["mean"][i]) / (model["scale"][i] or 1.0)
@@ -168,7 +191,8 @@ def predict_outcome(model: dict, games: list, tm: str, op: str, is_home: bool,
     state = T.state_through(games, before=date)
     parks = T.park_hr_factors([g for g in games if g.get("date", "") < date])
     f = T.featurize(state, tm, op, is_home, stadium, my_sp, op_sp, date,
-                    strict=False, parks=parks)
+                    strict=False, parks=parks,
+                    prior=season_prior(date))
     if f is None:
         return None
 

@@ -428,7 +428,6 @@ def cmd_predict(day: date) -> int:
     pred = S.predict(ctx)
     picks = S.to_starball_choices(pred)
     today = build_today(ctx, pred, picks)
-    apply_outcome_model(today, ctx)
     _write(TODAY_FILE, today)
     record_prediction(today, pred)
     print(f"web/today.json · {today['game']['lg']} vs {today['game']['opp']} · "

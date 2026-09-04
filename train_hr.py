@@ -34,8 +34,8 @@ from collections import Counter
 import train_outcome as T
 
 # 홈런은 '우리 타선 × 상대 배터리 × 구장' 이 전부다. 우리 투수는 무관하다.
-HR_FEATURES = ["park", "my_hr", "op_hra", "op_sp_hr9", "op_sp_era",
-               "my_rs", "op_ra"]
+HR_FEATURES = ["park", "my_hr", "my_hr10", "op_hra", "op_hra10",
+               "op_sp_hr9", "my_hr_trend"]
 
 # 실제 앱 선택지는 0~4 와 '5개 이상' 이다.
 TOP_BUCKET = 5
@@ -154,6 +154,10 @@ def main() -> int:
     sets = {
         "구장만": ["park"],
         "구장+타선": ["park", "my_hr"],
+        "구장+최근타선": ["park", "my_hr10"],
+        "구장+시즌+최근": ["park", "my_hr", "my_hr10"],
+        "구장+최근+흐름": ["park", "my_hr10", "my_hr_trend"],
+        "구장+최근+상대최근": ["park", "my_hr10", "op_hra10"],
         "구장+타선+상대피홈런": ["park", "my_hr", "op_hra"],
         "+상대선발": ["park", "my_hr", "op_hra", "op_sp_hr9"],
         "전체 7개": HR_FEATURES,

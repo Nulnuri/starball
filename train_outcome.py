@@ -72,6 +72,8 @@ FEATURES = [
     "h2h_win",                                       # 올 시즌 이 상대와의 승률
     "my_sp_recent", "op_sp_recent",                  # 선발 최근 3등판 ERA
     "sp_ip_edge",                                    # 선발 소화이닝 차
+    "my_hr10", "op_hra10",                           # 최근 10경기 홈런 흐름
+    "my_hr_trend",                                   # 최근 10경기 - 시즌 평균
 ]
 
 # 실제로 학습에 넣는 특징. 위 21개를 다 쓰면 표본 474건에 과적합해서
@@ -137,7 +139,8 @@ def new_state() -> dict:
     return {
         "team": defaultdict(lambda: {"g": 0, "rs": 0, "ra": 0, "hr": 0,
                                      "hra": 0, "w": 0, "last": None,
-                                     "recent": []}),
+                                     "recent": [], "recent_hr": [],
+                                     "recent_hra": []}),
         "pit": defaultdict(lambda: {"ip": 0.0, "er": 0, "hr": 0, "n": 0,
                                     "recent": []}),
         "bp": defaultdict(lambda: {"ip": 0.0, "er": 0}),
@@ -165,6 +168,11 @@ def feed(state: dict, game: dict) -> None:
         won = 1 if my > oy else 0
         r["w"] += won
         r["recent"].append(won)
+        # 최근 홈런 흐름. 시즌 평균만 쓰면 타선이 달아오른 구간을 못 따라간다 —
+        # 2026-09 두산 3연전에서 LG 가 매 경기 1홈런을 쳤는데 모델은 계속
+        # 0개를 골랐다. 시즌 평균이 0개(39%)였기 때문이다.
+        r["recent_hr"].append(int((box.get(foe) or {}).get("hr_allowed") or 0))
+        r["recent_hra"].append(int((box.get(me) or {}).get("hr_allowed") or 0))
         r["last"] = date
         state["h2h"][(tm, op)][0] += won
         state["h2h"][(tm, op)][1] += 1
@@ -263,6 +271,12 @@ def park_hr_factors(games: list, prior: Optional[dict] = None,
         shrunk = (hr[st] + base * k) / (gm[st] + k)
         out[st] = round(shrunk / league, 4) if league else 1.0
     return out
+
+
+def _recent_rate(rec: dict, key: str, fallback: float, n: int = 10) -> float:
+    """최근 n경기 평균. 표본이 얕으면 시즌 값을 쓴다."""
+    v = (rec.get(key) or [])[-n:]
+    return sum(v) / len(v) if len(v) >= 5 else fallback
 
 
 def _prior_h2h(prior: Optional[dict], tm: str, op: str) -> float:
@@ -405,6 +419,11 @@ def featurize(state: dict, tm: str, op: str, is_home: bool, stadium: str,
         "op_sp_recent": (_recent_era(po) if po and po["ip"] >= 5
                          else op_era),
         "sp_ip_edge": sp_ip_(pm, ppm) - sp_ip_(po, ppo),
+        # 최근 10경기 홈런 흐름. 없으면 시즌(축소) 값으로 대신한다.
+        "my_hr10": _recent_rate(a, "recent_hr", tr(a, pa, "hr")),
+        "op_hra10": _recent_rate(o, "recent_hra", tr(o, po_, "hra")),
+        "my_hr_trend": (_recent_rate(a, "recent_hr", tr(a, pa, "hr"))
+                        - tr(a, pa, "hr")),
     }
 
 
@@ -433,38 +452,54 @@ def build_rows(games: list, prior: Optional[dict] = None,
     # 그 시즌 기록으로 구장 팩터를 계산한다. 하드코딩 값을 쓰면 신규 구장이
     # 생긴 해에 시즌 내내 틀린 값을 쓴다.
     if parks is None:
+        # 시즌 전체로 계산하면 미래 경기의 홈런이 들어간다. 운영에서는 그
+        # 시점까지만 쓰므로 학습도 같아야 한다 — 다만 구장 팩터는 시즌
+        # 내내 크게 안 변해서, 표본을 위해 작년 값을 사전값으로 둔 전체
+        # 계산을 쓴다. 승패 모델의 특징에는 park 이 없어 영향이 없고,
+        # 홈런 모델에서만 쓰인다.
         parks = park_hr_factors(games, prior=(prior or {}).get("parks"))
     rows = []
-    for x in sorted(games, key=lambda g: g.get("date", "")):
-        hs, as_ = x.get("home_score"), x.get("away_score")
-        if hs is None or as_ is None:
+    # **날짜 단위로 처리한다.** 같은 날 경기를 하나씩 반영하면, 그날 두 번째
+    # 경기가 첫 경기 결과를 보게 된다. 운영에서는 그날 경기를 전부 빼고
+    # 예측하므로, 그렇게 학습하면 학습과 운영의 특징이 달라진다 —
+    # 실측으로 확률이 최대 49%p 까지 벌어졌다.
+    by_date: dict = {}
+    for g in games:
+        if g.get("home_score") is None or g.get("away_score") is None:
             continue
-        date = x.get("date", "")
-        pitchers = x.get("pitchers") or {}
+        by_date.setdefault(g.get("date", ""), []).append(g)
 
-        def starter(side):
-            for pp in (pitchers.get(side) or []):
-                if pp.get("started"):
-                    return pp
-            return None
+    for date in sorted(by_date):
+        todays = by_date[date]
+        for x in todays:
+            hs, as_ = x["home_score"], x["away_score"]
+            pitchers = x.get("pitchers") or {}
 
-        for me, foe, is_home in (("home", "away", True), ("away", "home", False)):
-            ms, os_ = starter(me), starter(foe)
-            if not ms or not os_:
-                continue
-            my, oy = (hs, as_) if is_home else (as_, hs)
-            f = featurize(st, x.get(me), x.get(foe), is_home,
-                          x.get("stadium", ""), ms.get("pcode"),
-                          os_.get("pcode"), date, strict=True, prior=prior,
-                          parks=parks)
-            if f is None:
-                continue
-            rows.append({"date": date, "team": x.get(me),
-                         "feat": [f[n] for n in FEATURES],
-                         "season": int(str(date)[:4] or 0),
-                         "y": 0 if my > oy else (2 if my < oy else 1)})
+            def starter(side):
+                for pp in (pitchers.get(side) or []):
+                    if pp.get("started"):
+                        return pp
+                return None
 
-        feed(st, x)
+            for me, foe, is_home in (("home", "away", True),
+                                     ("away", "home", False)):
+                ms, os_ = starter(me), starter(foe)
+                if not ms or not os_:
+                    continue
+                my, oy = (hs, as_) if is_home else (as_, hs)
+                f = featurize(st, x.get(me), x.get(foe), is_home,
+                              x.get("stadium", ""), ms.get("pcode"),
+                              os_.get("pcode"), date, strict=True, prior=prior,
+                              parks=parks)
+                if f is None:
+                    continue
+                rows.append({"date": date, "team": x.get(me),
+                             "feat": [f[n] for n in FEATURES],
+                             "season": int(str(date)[:4] or 0),
+                             "y": 0 if my > oy else (2 if my < oy else 1)})
+        # 그날 경기를 전부 featurize 한 뒤에 반영한다
+        for x in todays:
+            feed(st, x)
     return rows
 
 

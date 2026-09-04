@@ -276,7 +276,11 @@ def run(games: list, team: str = None, start: date = None,
                 nc = sum(seen_combo.values())
                 bc = ({k: v / nc for k, v in seen_combo.items()}
                       if nc >= 30 else None)
+                # use_learned=False 가 필수다. 학습 계수는 여기서 검증하는
+                # 경기들로 학습됐으므로, 켜면 미래 정보가 새어 성적이
+                # 부풀려진다. 학습 모델의 성능은 train_outcome.py 가 따로 잰다.
                 pred = S.predict(ctx, n_sim=n_sim, base_rates=base,
+                                 use_learned=False,
                                  base_combo=bc)
                 picks = S.to_starball_choices(pred)
             finally:

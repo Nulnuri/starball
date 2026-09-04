@@ -39,15 +39,21 @@ def main(argv: list) -> int:
     keys = [q["key"] for q in S.STARBALL_QUESTIONS]
     per, joint, n = defaultdict(Counter), Counter(), 0
     for g in games:
-        # 홈팀 관점으로 모은다. 팀별로 나누면 표본이 1/10 로 줄어드는데,
-        # 미션 정의가 팀 무관이라 전 구단을 합치는 편이 추정이 안정적이다.
-        t = B.actual_answers(g, g["home"])
-        if any(t.get(k) is None for k in keys):
-            continue
-        n += 1
-        for k in keys:
-            per[k][t[k]] += 1
-        joint[tuple(t[k] for k in keys)] += 1
+        # 홈·원정 **양쪽 관점**을 다 모은다. 미션 정의가 팀 무관이라 전
+        # 구단을 합치는 편이 추정이 안정적이고, 한쪽만 보면 표본이 절반이다.
+        #
+        # 조합 분포(joint)는 문항 사이의 상관을 재는 데 쓰는데, 표본이 얕으면
+        # 27 대 25 같은 차이가 그대로 판단을 뒤집는다. 실제로 홈팀 관점
+        # 581경기로만 재던 때, '이길 때 홈런을 더 친다' 는 실제와 반대인
+        # 상관이 나왔다(원본 4,090 팀-경기로는 진 팀이 홈런을 훨씬 덜 친다).
+        for side in ("home", "away"):
+            t = B.actual_answers(g, g[side])
+            if any(t.get(k) is None for k in keys):
+                continue
+            n += 1
+            for k in keys:
+                per[k][t[k]] += 1
+            joint[tuple(t[k] for k in keys)] += 1
 
     if n < 100:
         print(f"표본이 {n}건뿐입니다. 문항 라벨이 경기 로그와 맞는지 확인하세요.",

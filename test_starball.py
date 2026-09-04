@@ -94,15 +94,15 @@ def test_unknown_park_is_neutral():
 def test_probabilities_sum_to_one():
     """버킷 정의에 빈틈이나 겹침이 있으면 여기서 걸린다."""
     ctx = S.context_from_fixture(_snap())
-    pred = S.predict(ctx, n_sim=20000)
+    pred = S.predict(ctx, n_sim=20000, use_learned=False)
     for q in S.STARBALL_QUESTIONS:
         total = sum(pred.probs[q["key"]].values())
         assert abs(total - 1.0) < 0.02, f"{q['label']} 합계 {total}"
 
 
 def test_deterministic():
-    a = S.predict(S.context_from_fixture(_snap()), n_sim=5000)
-    b = S.predict(S.context_from_fixture(_snap()), n_sim=5000)
+    a = S.predict(S.context_from_fixture(_snap()), n_sim=5000, use_learned=False)
+    b = S.predict(S.context_from_fixture(_snap()), n_sim=5000, use_learned=False)
     assert a.probs == b.probs and a.exp == b.exp
 
 
@@ -113,13 +113,13 @@ def test_worse_opposing_starter_helps_lg():
     그 둘에 이미 들어있어 모델 입력이 아니다 — 흔들어도 안 움직이는 게 맞다.
     그래서 실제 경로인 선발 ERA 를 흔든다.
     """
-    base = S.predict(S.context_from_fixture(_snap()), n_sim=20000)
+    base = S.predict(S.context_from_fixture(_snap()), n_sim=20000, use_learned=False)
     s = _snap()
     for side in ("homeStarter", "awayStarter"):
         node = s["preview"].get(side) or {}
         if (node.get("currentSeasonStats") or {}).get("teamCode") != S.MY_TEAM:
             node["currentSeasonStats"]["era"] = "12.00"
-    worse = S.predict(S.context_from_fixture(s), n_sim=20000)
+    worse = S.predict(S.context_from_fixture(s), n_sim=20000, use_learned=False)
     assert worse.p_win > base.p_win, f"{base.p_win} → {worse.p_win}"
 
 
@@ -131,9 +131,9 @@ def test_worse_opposing_bullpen_helps_lg():
            else snap["game"]["homeTeamCode"])
     saved = S.BULLPEN_RA9.get(opp)
     try:
-        base = S.predict(S.context_from_fixture(_snap()), n_sim=20000)
+        base = S.predict(S.context_from_fixture(_snap()), n_sim=20000, use_learned=False)
         S.BULLPEN_RA9[opp] = (saved or 5.0) + 4.0
-        worse = S.predict(S.context_from_fixture(_snap()), n_sim=20000)
+        worse = S.predict(S.context_from_fixture(_snap()), n_sim=20000, use_learned=False)
         assert worse.p_win > base.p_win, f"{base.p_win} → {worse.p_win}"
     finally:
         if saved is None:
@@ -158,7 +158,8 @@ def test_combo_beats_greedy_under_same_yardstick():
             for k in ("offenseRun", "defenseR", "offenseHr", "defenseHr",
                       "offenseHit", "defenseHit", "offenseKk", "defenseKk"):
                 t[k] = max(0, int(t[k] * random.uniform(0.4, 1.8)))
-        c = S.predict(S.context_from_fixture(s), n_sim=6000).combo
+        c = S.predict(S.context_from_fixture(s), n_sim=6000,
+                  use_learned=False).combo
         assert c["best_prob"] >= c["greedy_prob"] - 1e-9,             f"best {c['best_prob']} < greedy {c['greedy_prob']}"
         assert 0.0 <= c["best_prob"] <= 1.0
 
@@ -166,7 +167,7 @@ def test_combo_beats_greedy_under_same_yardstick():
 def test_run_and_hr_are_correlated():
     """득점과 홈런은 실측 상관 +0.47 이다. 독립으로 뽑으면 조합 확률이 틀린다."""
     ctx = S.context_from_fixture(_snap())
-    pred = S.predict(ctx, n_sim=60000)
+    pred = S.predict(ctx, n_sim=60000, use_learned=False)
     combo = pred.combo
     # 상관이 살아있으면 조합 최적해와 문항별 1위가 갈릴 수 있어야 한다
     assert combo is not None and combo["best_prob"] >= combo["greedy_prob"], \
@@ -177,16 +178,16 @@ def test_park_factor_moves_home_runs():
     """홈런 억제 구장이면 기대 홈런이 줄어야 한다."""
     s = _snap()
     s["game"]["stadium"] = "잠실"
-    low = S.predict(S.context_from_fixture(s), n_sim=20000)
+    low = S.predict(S.context_from_fixture(s), n_sim=20000, use_learned=False)
     s2 = _snap()
     s2["game"]["stadium"] = "창원"
-    high = S.predict(S.context_from_fixture(s2), n_sim=20000)
+    high = S.predict(S.context_from_fixture(s2), n_sim=20000, use_learned=False)
     assert low.exp["total_hr"] < high.exp["total_hr"]
 
 
 def test_edge_is_gap_to_runner_up():
     ctx = S.context_from_fixture(_snap())
-    picks = S.to_starball_choices(S.predict(ctx, n_sim=20000))
+    picks = S.to_starball_choices(S.predict(ctx, n_sim=20000, use_learned=False))
     for p in picks:
         probs = sorted((v for _, v in p["all"]), reverse=True)
         assert abs(p["edge"] - (probs[0] - probs[1])) < 1e-9
@@ -199,7 +200,7 @@ def _survives(mutate) -> bool:
     s = _snap()
     mutate(s)
     ctx = S.context_from_fixture(s)
-    pred = S.predict(ctx, n_sim=3000)
+    pred = S.predict(ctx, n_sim=3000, use_learned=False)
     picks = S.to_starball_choices(pred)
     S.render(ctx, pred, picks)
     S.build_ntfy_message(ctx, pred, picks)
@@ -270,7 +271,7 @@ def test_today_kst_is_utc_plus_nine():
 def test_ntfy_shows_combo_in_form_order():
     """알림은 조합 최적해를 앱 폼 순서 그대로 실어야 한다."""
     ctx = S.context_from_fixture(_snap())
-    pred = S.predict(ctx, n_sim=20000)
+    pred = S.predict(ctx, n_sim=20000, use_learned=False)
     picks = S.to_starball_choices(pred)
     msg = S.build_ntfy_message(ctx, pred, picks)
     best = pred.combo["best"]
@@ -284,7 +285,7 @@ def test_ntfy_shows_combo_in_form_order():
 def test_ntfy_digest_is_meaningful():
     """접힌 알림에서 첫 줄만 보인다. 세 값이 다 들어가야 한다."""
     ctx = S.context_from_fixture(_snap())
-    pred = S.predict(ctx, n_sim=20000)
+    pred = S.predict(ctx, n_sim=20000, use_learned=False)
     picks = S.to_starball_choices(pred)
     first = S.build_ntfy_message(ctx, pred, picks).splitlines()[0]
     assert len(first.split(" · ")) == len(S.STARBALL_QUESTIONS)
@@ -294,7 +295,7 @@ def test_ntfy_digest_is_meaningful():
 def test_skill_gating_is_wired():
     """QUESTION_SKILL 이 실제로 picks 에 반영되는가."""
     ctx = S.context_from_fixture(_snap())
-    picks = S.to_starball_choices(S.predict(ctx, n_sim=5000))
+    picks = S.to_starball_choices(S.predict(ctx, n_sim=5000, use_learned=False))
     for p in picks:
         expected = (S.QUESTION_SKILL.get(p["key"]) or {}).get("gain", 0.0) >= S.SKILL_THRESHOLD
         assert p["has_skill"] is expected

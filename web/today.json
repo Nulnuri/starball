@@ -1,12 +1,12 @@
 {
- "generated": "2026-09-03T10:04:43+09:00",
+ "generated": "2026-09-04T08:56:01+09:00",
  "game": {
-  "date": "2026-09-03",
+  "date": "2026-09-04",
   "time": "18:30",
   "stadium": "잠실",
   "lg": "LG",
-  "opp": "두산",
-  "lgIsHome": false
+  "opp": "삼성",
+  "lgIsHome": true
  },
  "missions": [
   {
@@ -19,26 +19,21 @@
     "base": 50.9,
     "gain": 2.3
    },
-   "prob": 0.6171,
+   "prob": 0.522,
    "options": [
     {
      "label": "승",
-     "prob": 0.3691
+     "prob": 0.4654
     },
     {
      "label": "무",
-     "prob": 0.0138
+     "prob": 0.0126
     },
     {
      "label": "패",
-     "prob": 0.6171
+     "prob": 0.522
     }
-   ],
-   "confidence": "높음",
-   "tierAccuracy": 79.7,
-   "band": 80.0,
-   "bandAccuracy": 80.1,
-   "model": "learned"
+   ]
   },
   {
    "n": 2,
@@ -54,7 +49,7 @@
    "options": [
     {
      "label": "0점",
-     "prob": 0.0782
+     "prob": 0.0776
     },
     {
      "label": "1점",
@@ -62,35 +57,35 @@
     },
     {
      "label": "2점",
-     "prob": 0.157
+     "prob": 0.1552
     },
     {
      "label": "3점",
-     "prob": 0.1273
+     "prob": 0.1293
     },
     {
      "label": "4점",
-     "prob": 0.1009
+     "prob": 0.1005
     },
     {
      "label": "5점",
-     "prob": 0.0936
+     "prob": 0.0922
     },
     {
      "label": "6점",
-     "prob": 0.0734
+     "prob": 0.0731
     },
     {
      "label": "7점",
-     "prob": 0.0595
+     "prob": 0.0604
     },
     {
      "label": "8점",
-     "prob": 0.046
+     "prob": 0.0469
     },
     {
      "label": "9점 이상",
-     "prob": 0.0758
+     "prob": 0.0764
     }
    ]
   },
@@ -104,88 +99,87 @@
     "base": 41.9,
     "gain": 0.0
    },
-   "prob": 0.4758,
+   "prob": 0.4843,
    "options": [
     {
      "label": "0개",
-     "prob": 0.4758
+     "prob": 0.4843
     },
     {
      "label": "1개",
-     "prob": 0.2765
+     "prob": 0.3269
     },
     {
      "label": "2개",
-     "prob": 0.1269
+     "prob": 0.1408
     },
     {
      "label": "3개",
-     "prob": 0.0579
+     "prob": 0.0395
     },
     {
      "label": "4개",
-     "prob": 0.0332
+     "prob": 0.0056
     },
     {
      "label": "5개 이상",
-     "prob": 0.0297
+     "prob": 0.0029
     }
    ]
   }
  ],
  "joint": {
-  "prob": 0.0675,
-  "baseline": 0.0637,
-  "confidence": "보통",
-  "outcomeModel": "learned"
+  "prob": 0.0554,
+  "baseline": 0.0555,
+  "confidence": "낮음"
  },
  "score": {
   "lg": 3.5,
   "opp": 5.1,
   "modal": [
    2,
-   3
+   4
   ]
  },
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "박시원",
-    "era": 5.2,
-    "whip": 1.71,
-    "ip": 36.3,
-    "games": 24,
-    "spot": true,
+    "name": "카라스코",
+    "era": 3.26,
+    "whip": 0.82,
+    "ip": 30.3,
+    "games": 5,
+    "spot": false,
     "vs": {
-     "foe": "두산",
-     "era": 3.86,
-     "ip": 2.3,
-     "games": 3
+     "foe": "삼성",
+     "era": 0.0,
+     "ip": 0.0,
+     "games": 0
     },
     "recent": {
-     "era": 7.24,
-     "whip": 1.83,
-     "ip": 13.7,
+     "era": 3.26,
+     "whip": 0.82,
+     "ip": 30.3,
      "starts": 5,
-     "asStarter": 3
+     "asStarter": 5
     }
    },
    "opp": {
-    "name": "곽빈",
-    "era": 2.36,
-    "whip": 1.09,
-    "ip": 141.0,
-    "games": 24,
+    "name": "페덱",
+    "era": 2.25,
+    "whip": 0.84,
+    "ip": 44.0,
+    "games": 7,
     "spot": false,
     "vs": {
      "foe": "LG",
-     "era": 2.38,
-     "ip": 11.3,
-     "games": 2
+     "era": 0.0,
+     "ip": 0.0,
+     "games": 0
     },
     "recent": {
-     "era": 1.41,
-     "whip": 0.84,
+     "era": 2.53,
+     "whip": 0.91,
      "ip": 32.0,
      "starts": 5,
      "asStarter": 5
@@ -199,32 +193,20 @@
   },
   "bullpen": {
    "lg": 5.541,
-   "opp": 4.663
+   "opp": 4.356
   },
   "form": {
-   "lg": "승승승패승",
-   "opp": "패패승승패"
+   "lg": "승승승승패",
+   "opp": "패승승승승"
   },
   "h2h": {
-   "w": 9,
-   "l": 4,
-   "d": 1,
-   "games": 14
+   "w": 5,
+   "l": 6,
+   "d": 0,
+   "games": 11
   }
  },
- "warnings": [
-  "LG 선발 박시원은 등판당 1.5이닝(24경기)로 불펜/임시 선발 패턴 — 소화 이닝 불확실",
-  "박시원의 두산전 표본은 2.3이닝(3경기)뿐 — 상대 ERA를 크게 축소 적용"
- ],
+ "warnings": [],
  "starballs": 1,
- "goal": 7,
- "outcomeSkill": {
-  "overall": 57.5,
-  "validation": {
-   "splits": 7,
-   "base": 48.6,
-   "model": 58.1,
-   "calib_error": 3.5
-  }
- }
+ "goal": 7
 }
