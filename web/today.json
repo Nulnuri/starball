@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-06T10:04:56+09:00",
+ "generated": "2026-09-08T10:06:14+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -10,11 +10,11 @@
   }
  },
  "game": {
-  "date": "2026-09-06",
-  "time": "17:00",
+  "date": "2026-09-08",
+  "time": "18:30",
   "stadium": "잠실",
   "lg": "LG",
-  "opp": "삼성",
+  "opp": "키움",
   "lgIsHome": true
  },
  "missions": [
@@ -28,19 +28,19 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.5269,
+   "prob": 0.557,
    "options": [
     {
      "label": "승",
-     "prob": 0.5269
+     "prob": 0.557
     },
     {
      "label": "무",
-     "prob": 0.0174
+     "prob": 0.0207
     },
     {
      "label": "패",
-     "prob": 0.4557
+     "prob": 0.4223
     }
    ],
    "model": "learned",
@@ -48,31 +48,31 @@
     {
      "key": "op_win",
      "label": "상대 시즌 승률",
-     "value": "0.585",
-     "weight": -0.1253
+     "value": "0.346",
+     "weight": 0.1928
+    },
+    {
+     "key": "my_sp_era",
+     "label": "LG 선발 ERA",
+     "value": "5.19",
+     "weight": -0.0948
+    },
+    {
+     "key": "op_form10",
+     "label": "상대 최근 10경기",
+     "value": "0.200",
+     "weight": 0.0944
     },
     {
      "key": "my_win",
      "label": "LG 시즌 승률",
-     "value": "0.568",
-     "weight": 0.1044
-    },
-    {
-     "key": "op_sp_era",
-     "label": "상대 선발 ERA",
-     "value": "3.08",
-     "weight": -0.1022
-    },
-    {
-     "key": "my_form10",
-     "label": "LG 최근 10경기",
-     "value": "0.800",
-     "weight": 0.0989
+     "value": "0.559",
+     "weight": 0.0924
     }
    ],
    "blend": {
     "model": 0.3,
-    "teamWin": 0.568,
+    "teamWin": 0.559,
     "modelPick": "승",
     "priorPick": "승"
    },
@@ -144,23 +144,23 @@
     "base": 33.6,
     "gain": 0.9
    },
-   "prob": 0.5161,
+   "prob": 0.5174,
    "options": [
     {
      "label": "0개",
-     "prob": 0.5161
+     "prob": 0.5174
     },
     {
      "label": "1개",
-     "prob": 0.3158
+     "prob": 0.3154
     },
     {
      "label": "2개",
-     "prob": 0.1278
+     "prob": 0.1273
     },
     {
      "label": "3개",
-     "prob": 0.0331
+     "prob": 0.0328
     },
     {
      "label": "4개",
@@ -176,20 +176,20 @@
     {
      "key": "park",
      "label": "구장",
-     "value": "0.75",
-     "weight": 0.2786
+     "value": "0.74",
+     "weight": 0.2825
     }
    ]
   }
  ],
  "joint": {
-  "prob": 0.0606,
+  "prob": 0.0645,
   "baseline": 0.0555,
-  "confidence": "낮음"
+  "confidence": "보통"
  },
  "score": {
-  "lg": 3.9,
-  "opp": 5.1,
+  "lg": 5.8,
+  "opp": 4.0,
   "modal": [
    3,
    3
@@ -198,63 +198,72 @@
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "임찬규",
-    "era": 3.84,
-    "whip": 1.35,
-    "ip": 133.7,
-    "games": 24,
-    "spot": false,
+    "name": "박시원",
+    "era": 4.57,
+    "whip": 1.55,
+    "ip": 41.3,
+    "games": 25,
+    "spot": true,
     "vs": {
-     "foe": "삼성",
-     "era": 5.4,
-     "ip": 15.0,
-     "games": 3
+     "foe": "키움",
+     "era": 0.0,
+     "ip": 1.0,
+     "games": 1
     },
     "recent": {
-     "era": 1.48,
-     "whip": 0.99,
-     "ip": 30.3,
+     "era": 5.6,
+     "whip": 1.47,
+     "ip": 17.7,
      "starts": 5,
-     "asStarter": 5
+     "asStarter": 4
     }
    },
    "opp": {
-    "name": "후라도",
-    "era": 3.11,
-    "whip": 1.25,
-    "ip": 107.0,
-    "games": 17,
+    "name": "하영민",
+    "era": 4.54,
+    "whip": 1.46,
+    "ip": 111.0,
+    "games": 23,
     "spot": false,
     "vs": {
      "foe": "LG",
-     "era": 3.55,
-     "ip": 12.7,
+     "era": 8.31,
+     "ip": 8.7,
      "games": 2
+    },
+    "recent": {
+     "era": 4.5,
+     "whip": 1.54,
+     "ip": 28.0,
+     "starts": 5,
+     "asStarter": 5
     }
    }
   },
   "park": {
    "name": "잠실",
-   "raw": 0.7476,
-   "applied": 0.874
+   "raw": 0.744,
+   "applied": 0.872
   },
   "bullpen": {
    "lg": 5.541,
-   "opp": 4.356
+   "opp": 6.642
   },
   "form": {
-   "lg": "패승승승승",
-   "opp": "승패패승승"
+   "lg": "패패승승승",
+   "opp": "승패패승패"
   },
   "h2h": {
-   "w": 6,
-   "l": 7,
+   "w": 10,
+   "l": 5,
    "d": 0,
-   "games": 13
+   "games": 15
   }
  },
  "warnings": [
-  "후라도의 최근 등판 기록을 찾지 못했습니다 — 시즌 성적만 사용"
+  "LG 선발 박시원은 등판당 1.7이닝(25경기)로 불펜/임시 선발 패턴 — 소화 이닝 불확실",
+  "박시원의 키움전 표본은 1.0이닝(1경기)뿐 — 상대 ERA를 크게 축소 적용",
+  "하영민의 LG전 표본은 8.7이닝(2경기)뿐 — 상대 ERA를 크게 축소 적용"
  ],
  "starballs": 2,
  "goal": 7
