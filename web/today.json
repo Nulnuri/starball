@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-09T10:05:34+09:00",
+ "generated": "2026-09-12T10:04:26+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -10,11 +10,11 @@
   }
  },
  "game": {
-  "date": "2026-09-09",
-  "time": "18:30",
-  "stadium": "대전",
+  "date": "2026-09-12",
+  "time": "17:00",
+  "stadium": "대구",
   "lg": "LG",
-  "opp": "한화",
+  "opp": "삼성",
   "lgIsHome": false
  },
  "missions": [
@@ -28,52 +28,52 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.5494,
+   "prob": 0.5065,
    "options": [
     {
      "label": "승",
-     "prob": 0.5494
+     "prob": 0.5065
     },
     {
      "label": "무",
-     "prob": 0.0205
+     "prob": 0.0172
     },
     {
      "label": "패",
-     "prob": 0.4302
+     "prob": 0.4763
     }
    ],
    "model": "learned",
    "reasons": [
     {
-     "key": "my_win",
-     "label": "LG 시즌 승률",
-     "value": "0.559",
-     "weight": 0.0924
-    },
-    {
      "key": "op_win",
      "label": "상대 시즌 승률",
-     "value": "0.440",
-     "weight": 0.0677
+     "value": "0.590",
+     "weight": -0.1321
     },
     {
-     "key": "my_form10",
-     "label": "LG 최근 10경기",
+     "key": "op_sp_era",
+     "label": "상대 선발 ERA",
+     "value": "3.23",
+     "weight": -0.0881
+    },
+    {
+     "key": "my_win",
+     "label": "LG 시즌 승률",
+     "value": "0.551",
+     "weight": 0.0809
+    },
+    {
+     "key": "op_form10",
+     "label": "상대 최근 10경기",
      "value": "0.700",
-     "weight": 0.0667
-    },
-    {
-     "key": "my_sp_era",
-     "label": "LG 선발 ERA",
-     "value": "3.47",
-     "weight": 0.066
+     "weight": -0.0666
     }
    ],
    "blend": {
     "model": 0.3,
-    "teamWin": 0.559,
-    "modelPick": "승",
+    "teamWin": 0.551,
+    "modelPick": "패",
     "priorPick": "승"
    },
    "confidence": "낮음",
@@ -138,37 +138,37 @@
    "n": 3,
    "key": "lg_hr",
    "label": "홈런 수 맞히기",
-   "pick": "0개",
+   "pick": "1개",
    "skill": {
     "hit": 34.5,
     "base": 33.6,
     "gain": 0.9
    },
-   "prob": 0.4126,
+   "prob": 0.3503,
    "options": [
     {
      "label": "0개",
-     "prob": 0.4126
+     "prob": 0.3278
     },
     {
      "label": "1개",
-     "prob": 0.3436
+     "prob": 0.3503
     },
     {
      "label": "2개",
-     "prob": 0.1687
+     "prob": 0.2012
     },
     {
      "label": "3개",
-     "prob": 0.0576
+     "prob": 0.0859
     },
     {
      "label": "4개",
-     "prob": 0.012
+     "prob": 0.0238
     },
     {
      "label": "5개 이상",
-     "prob": 0.0056
+     "prob": 0.0109
     }
    ],
    "model": "learned",
@@ -176,20 +176,20 @@
     {
      "key": "park",
      "label": "구장",
-     "value": "1.03",
-     "weight": -0.0294
+     "value": "1.25",
+     "weight": 0.2788
     }
    ]
   }
  ],
  "joint": {
-  "prob": 0.0501,
+  "prob": 0.0449,
   "baseline": 0.0555,
-  "confidence": "보통"
+  "confidence": "낮음"
  },
  "score": {
-  "lg": 5.1,
-  "opp": 6.1,
+  "lg": 4.0,
+  "opp": 5.4,
   "modal": [
    3,
    4
@@ -198,71 +198,69 @@
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "카라스코",
-    "era": 3.47,
-    "whip": 0.85,
-    "ip": 36.3,
-    "games": 6,
+    "name": "톨허스트",
+    "era": 4.22,
+    "whip": 1.24,
+    "ip": 134.3,
+    "games": 24,
     "spot": false,
     "vs": {
-     "foe": "한화",
-     "era": 3.0,
-     "ip": 6.0,
-     "games": 1
+     "foe": "삼성",
+     "era": 1.24,
+     "ip": 29.0,
+     "games": 5
     },
     "recent": {
-     "era": 4.3,
-     "whip": 1.06,
-     "ip": 29.3,
+     "era": 4.34,
+     "whip": 1.21,
+     "ip": 29.0,
      "starts": 5,
      "asStarter": 5
     }
    },
    "opp": {
-    "name": "왕옌청",
-    "era": 3.86,
-    "whip": 1.5,
-    "ip": 123.7,
-    "games": 24,
+    "name": "후라도",
+    "era": 3.28,
+    "whip": 1.25,
+    "ip": 112.7,
+    "games": 18,
     "spot": false,
     "vs": {
      "foe": "LG",
-     "era": 4.76,
-     "ip": 11.3,
-     "games": 2
+     "era": 4.42,
+     "ip": 18.3,
+     "games": 3
     },
     "recent": {
-     "era": 4.78,
-     "whip": 1.59,
-     "ip": 26.3,
-     "starts": 5,
-     "asStarter": 5
+     "era": 6.35,
+     "whip": 1.24,
+     "ip": 5.7,
+     "starts": 1,
+     "asStarter": 1
     }
    }
   },
   "park": {
-   "name": "대전",
-   "raw": 1.0275,
-   "applied": 1.014
+   "name": "대구",
+   "raw": 1.2541,
+   "applied": 1.127
   },
   "bullpen": {
    "lg": 5.541,
-   "opp": 6.189
+   "opp": 4.356
   },
   "form": {
-   "lg": "패패패승승",
-   "opp": "승승승승패"
+   "lg": "패패패패승",
+   "opp": "승패승승승"
   },
   "h2h": {
    "w": 6,
-   "l": 7,
+   "l": 8,
    "d": 0,
-   "games": 13
+   "games": 14
   }
  },
- "warnings": [
-  "카라스코의 한화전 표본은 6.0이닝(1경기)뿐 — 상대 ERA를 크게 축소 적용"
- ],
+ "warnings": [],
  "starballs": 2,
  "goal": 7
 }
