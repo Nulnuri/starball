@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-12T10:04:26+09:00",
+ "generated": "2026-09-13T10:04:38+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -10,7 +10,7 @@
   }
  },
  "game": {
-  "date": "2026-09-12",
+  "date": "2026-09-13",
   "time": "17:00",
   "stadium": "대구",
   "lg": "LG",
@@ -28,19 +28,19 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.5065,
+   "prob": 0.5134,
    "options": [
     {
      "label": "승",
-     "prob": 0.5065
+     "prob": 0.5134
     },
     {
      "label": "무",
-     "prob": 0.0172
+     "prob": 0.0171
     },
     {
      "label": "패",
-     "prob": 0.4763
+     "prob": 0.4695
     }
    ],
    "model": "learned",
@@ -48,14 +48,8 @@
     {
      "key": "op_win",
      "label": "상대 시즌 승률",
-     "value": "0.590",
-     "weight": -0.1321
-    },
-    {
-     "key": "op_sp_era",
-     "label": "상대 선발 ERA",
-     "value": "3.23",
-     "weight": -0.0881
+     "value": "0.593",
+     "weight": -0.1363
     },
     {
      "key": "my_win",
@@ -68,6 +62,12 @@
      "label": "상대 최근 10경기",
      "value": "0.700",
      "weight": -0.0666
+    },
+    {
+     "key": "home",
+     "label": "홈/원정",
+     "value": "원정",
+     "weight": -0.0561
     }
    ],
    "blend": {
@@ -148,7 +148,7 @@
    "options": [
     {
      "label": "0개",
-     "prob": 0.3278
+     "prob": 0.3251
     },
     {
      "label": "1개",
@@ -156,19 +156,19 @@
     },
     {
      "label": "2개",
-     "prob": 0.2012
+     "prob": 0.2022
     },
     {
      "label": "3개",
-     "prob": 0.0859
+     "prob": 0.0869
     },
     {
      "label": "4개",
-     "prob": 0.0238
+     "prob": 0.0243
     },
     {
      "label": "5개 이상",
-     "prob": 0.0109
+     "prob": 0.0111
     }
    ],
    "model": "learned",
@@ -176,20 +176,20 @@
     {
      "key": "park",
      "label": "구장",
-     "value": "1.25",
-     "weight": 0.2788
+     "value": "1.26",
+     "weight": 0.2869
     }
    ]
   }
  ],
  "joint": {
-  "prob": 0.0449,
+  "prob": 0.0455,
   "baseline": 0.0555,
   "confidence": "낮음"
  },
  "score": {
   "lg": 4.0,
-  "opp": 5.4,
+  "opp": 5.7,
   "modal": [
    3,
    4
@@ -198,66 +198,66 @@
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "톨허스트",
-    "era": 4.22,
-    "whip": 1.24,
-    "ip": 134.3,
-    "games": 24,
+    "name": "임찬규",
+    "era": 4.14,
+    "whip": 1.38,
+    "ip": 139.0,
+    "games": 25,
     "spot": false,
     "vs": {
      "foe": "삼성",
-     "era": 1.24,
-     "ip": 29.0,
-     "games": 5
+     "era": 7.08,
+     "ip": 20.3,
+     "games": 4
     },
     "recent": {
-     "era": 4.34,
-     "whip": 1.21,
-     "ip": 29.0,
+     "era": 2.73,
+     "whip": 1.15,
+     "ip": 29.7,
      "starts": 5,
      "asStarter": 5
     }
    },
    "opp": {
-    "name": "후라도",
-    "era": 3.28,
-    "whip": 1.25,
-    "ip": 112.7,
-    "games": 18,
+    "name": "최원태",
+    "era": 4.37,
+    "whip": 1.36,
+    "ip": 113.3,
+    "games": 21,
     "spot": false,
     "vs": {
      "foe": "LG",
-     "era": 4.42,
-     "ip": 18.3,
-     "games": 3
+     "era": 1.5,
+     "ip": 12.0,
+     "games": 2
     },
     "recent": {
-     "era": 6.35,
-     "whip": 1.24,
-     "ip": 5.7,
-     "starts": 1,
-     "asStarter": 1
+     "era": 2.28,
+     "whip": 0.98,
+     "ip": 27.7,
+     "starts": 5,
+     "asStarter": 5
     }
    }
   },
   "park": {
    "name": "대구",
-   "raw": 1.2541,
-   "applied": 1.127
+   "raw": 1.2615,
+   "applied": 1.131
   },
   "bullpen": {
    "lg": 5.541,
    "opp": 4.356
   },
   "form": {
-   "lg": "패패패패승",
-   "opp": "승패승승승"
+   "lg": "승패패패패",
+   "opp": "패승패승승"
   },
   "h2h": {
-   "w": 6,
+   "w": 7,
    "l": 8,
    "d": 0,
-   "games": 14
+   "games": 15
   }
  },
  "warnings": [],
