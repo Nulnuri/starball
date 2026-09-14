@@ -1,27 +1,27 @@
 {
- "updated": "2026-09-13T10:04:38+09:00",
+ "updated": "2026-09-14T10:05:11+09:00",
  "starballs": 2,
  "goal": 7,
- "settled": 23,
+ "settled": 24,
  "allHit": 2,
- "rate": 0.087,
+ "rate": 0.0833,
  "replayed": 14,
- "live": 9,
+ "live": 10,
  "perMission": {
   "outcome": {
    "label": "승패 맞히기",
-   "hit": 12,
-   "total": 23
+   "hit": 13,
+   "total": 24
   },
   "margin": {
    "label": "득실 차 맞히기",
    "hit": 7,
-   "total": 23
+   "total": 24
   },
   "lg_hr": {
    "label": "홈런 수 맞히기",
    "hit": 9,
-   "total": 23
+   "total": 24
   }
  },
  "games": [
@@ -34,7 +34,7 @@
     "margin": "1점",
     "lg_hr": "1개"
    },
-   "settled": false,
+   "settled": true,
    "belief": {
     "outcome": {
      "승": 0.5134,
@@ -95,10 +95,21 @@
     "lg_hr": "1개"
    },
    "greedyProb": 0.0455,
-   "actual": null,
-   "hits": null,
-   "earned": null,
-   "score": null
+   "actual": {
+    "outcome": "승",
+    "margin": "8점",
+    "lg_hr": "3개"
+   },
+   "hits": {
+    "outcome": true,
+    "margin": false,
+    "lg_hr": false
+   },
+   "earned": false,
+   "score": {
+    "lg": 13,
+    "opp": 5
+   }
   },
   {
    "date": "2026-09-12",
