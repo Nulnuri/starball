@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-13T10:04:38+09:00",
+ "generated": "2026-09-15T10:06:07+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -10,11 +10,11 @@
   }
  },
  "game": {
-  "date": "2026-09-13",
-  "time": "17:00",
-  "stadium": "대구",
+  "date": "2026-09-15",
+  "time": "18:30",
+  "stadium": "창원",
   "lg": "LG",
-  "opp": "삼성",
+  "opp": "NC",
   "lgIsHome": false
  },
  "missions": [
@@ -28,34 +28,34 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.5134,
+   "prob": 0.509,
    "options": [
     {
      "label": "승",
-     "prob": 0.5134
+     "prob": 0.509
     },
     {
      "label": "무",
-     "prob": 0.0171
+     "prob": 0.0194
     },
     {
      "label": "패",
-     "prob": 0.4695
+     "prob": 0.4716
     }
    ],
    "model": "learned",
    "reasons": [
     {
-     "key": "op_win",
-     "label": "상대 시즌 승률",
-     "value": "0.593",
-     "weight": -0.1363
+     "key": "op_sp_era",
+     "label": "상대 선발 ERA",
+     "value": "1.80",
+     "weight": -0.2214
     },
     {
      "key": "my_win",
      "label": "LG 시즌 승률",
-     "value": "0.551",
-     "weight": 0.0809
+     "value": "0.557",
+     "weight": 0.09
     },
     {
      "key": "op_form10",
@@ -72,7 +72,7 @@
    ],
    "blend": {
     "model": 0.3,
-    "teamWin": 0.551,
+    "teamWin": 0.557,
     "modelPick": "패",
     "priorPick": "승"
    },
@@ -144,31 +144,31 @@
     "base": 33.6,
     "gain": 0.9
    },
-   "prob": 0.3503,
+   "prob": 0.3504,
    "options": [
     {
      "label": "0개",
-     "prob": 0.3251
+     "prob": 0.3323
     },
     {
      "label": "1개",
-     "prob": 0.3503
+     "prob": 0.3504
     },
     {
      "label": "2개",
-     "prob": 0.2022
+     "prob": 0.1996
     },
     {
      "label": "3개",
-     "prob": 0.0869
+     "prob": 0.0842
     },
     {
      "label": "4개",
-     "prob": 0.0243
+     "prob": 0.023
     },
     {
      "label": "5개 이상",
-     "prob": 0.0111
+     "prob": 0.0106
     }
    ],
    "model": "learned",
@@ -176,91 +176,93 @@
     {
      "key": "park",
      "label": "구장",
-     "value": "1.26",
-     "weight": 0.2869
+     "value": "1.24",
+     "weight": 0.2656
     }
    ]
   }
  ],
  "joint": {
-  "prob": 0.0455,
+  "prob": 0.0451,
   "baseline": 0.0555,
   "confidence": "낮음"
  },
  "score": {
-  "lg": 4.0,
-  "opp": 5.7,
+  "lg": 5.9,
+  "opp": 5.1,
   "modal": [
-   3,
-   4
+   4,
+   3
   ]
  },
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "임찬규",
-    "era": 4.14,
-    "whip": 1.38,
-    "ip": 139.0,
-    "games": 25,
+    "name": "카라스코",
+    "era": 3.83,
+    "whip": 0.98,
+    "ip": 40.0,
+    "games": 7,
     "spot": false,
     "vs": {
-     "foe": "삼성",
-     "era": 7.08,
-     "ip": 20.3,
-     "games": 4
+     "foe": "NC",
+     "era": 0.0,
+     "ip": 0.0,
+     "games": 0
     },
     "recent": {
-     "era": 2.73,
-     "whip": 1.15,
-     "ip": 29.7,
+     "era": 5.0,
+     "whip": 1.26,
+     "ip": 27.0,
      "starts": 5,
      "asStarter": 5
     }
    },
    "opp": {
-    "name": "최원태",
-    "era": 4.37,
-    "whip": 1.36,
-    "ip": 113.3,
-    "games": 21,
-    "spot": false,
+    "name": "송명기",
+    "era": 5.11,
+    "whip": 1.62,
+    "ip": 24.7,
+    "games": 18,
+    "spot": true,
     "vs": {
      "foe": "LG",
-     "era": 1.5,
-     "ip": 12.0,
-     "games": 2
+     "era": 0.0,
+     "ip": 0.0,
+     "games": 0
     },
     "recent": {
-     "era": 2.28,
-     "whip": 0.98,
-     "ip": 27.7,
+     "era": 2.7,
+     "whip": 0.7,
+     "ip": 10.0,
      "starts": 5,
-     "asStarter": 5
+     "asStarter": 1
     }
    }
   },
   "park": {
-   "name": "대구",
-   "raw": 1.2615,
-   "applied": 1.131
+   "name": "창원",
+   "raw": 1.2421,
+   "applied": 1.121
   },
   "bullpen": {
    "lg": 5.541,
-   "opp": 4.356
+   "opp": 6.203
   },
   "form": {
-   "lg": "승패패패패",
-   "opp": "패승패승승"
+   "lg": "승승패패패",
+   "opp": "패승승승승"
   },
   "h2h": {
    "w": 7,
-   "l": 8,
+   "l": 6,
    "d": 0,
-   "games": 15
+   "games": 13
   }
  },
- "warnings": [],
+ "warnings": [
+  "NC 선발 송명기은 등판당 1.4이닝(18경기)로 불펜/임시 선발 패턴 — 소화 이닝 불확실"
+ ],
  "starballs": 2,
  "goal": 7
 }
