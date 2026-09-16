@@ -1,8 +1,45 @@
 // 홈화면에서 열었을 때 껍데기가 즉시 뜨게 하고, 데이터는 항상 새로 받는다.
 // 예측값을 캐시에서 주면 어제 값을 보여주게 되므로 절대 캐시하지 않는다.
-const SHELL = "starball-shell-v3";
+const SHELL = "starball-shell-v4";
 const FILES = ["./", "./manifest.webmanifest",
                "./icon-192.png", "./icon-512.png"];
+
+// 껍데기도 없고 네트워크도 안 될 때 내놓을 최소 화면.
+//
+// 예전에는 이 자리에서 `Response.error()` 를 돌려줬다. 그게 브라우저의
+// "페이지에 연결할 수 없음" 화면 그 자체다 — 알림을 눌렀는데 오류만 뜨고
+// 넘어가지 않는다는 신고의 정체였다. 오류 화면을 브라우저에 맡기면 사용자는
+// 앱이 죽은 줄 안다. 최소한 무슨 일인지 말하고 다시 시도할 길을 준다.
+const OFFLINE = `<!doctype html><html lang=ko><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>스타볼 예측기</title>
+<style>body{margin:0;display:grid;place-items:center;min-height:100svh;
+background:#131011;color:#f5f3f2;font:16px/1.6 system-ui,sans-serif;text-align:center}
+div{padding:24px;max-width:22rem}a{display:inline-block;margin-top:18px;padding:12px 22px;
+border-radius:999px;background:#c8102e;color:#fff;text-decoration:none;font-weight:700}
+p{color:#a29c9a;font-size:14px}</style>
+<div><h1>잠깐 연결이 안 됩니다</h1>
+<p>네트워크가 끊겼거나 앱 데이터가 아직 준비되지 않았습니다.<br>
+잠시 뒤 다시 눌러 주세요.</p>
+<a href="./">다시 열기</a></div>`;
+
+function offlinePage() {
+  return new Response(OFFLINE, {
+    status: 200,
+    headers: { "content-type": "text/html; charset=utf-8",
+               "cache-control": "no-store" },
+  });
+}
+
+// 리다이렉트를 거친 응답은 내비게이션에 그대로 돌려줄 수 없다 — 브라우저가
+// 거부하고 오류 화면을 띄운다. 몸통만 꺼내 새 응답으로 다시 포장한다.
+async function unredirect(r) {
+  if (!r || !r.redirected) return r;
+  const body = await r.blob();
+  return new Response(body, {
+    status: 200, statusText: "OK", headers: r.headers,
+  });
+}
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(SHELL).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
@@ -33,13 +70,26 @@ self.addEventListener("fetch", e => {
     const here = url.pathname.replace(/index\.html$/, "");
     if (here !== root) return;                    // 문서 등은 그냥 네트워크
     e.respondWith((async () => {
-      const shell = await caches.match(new URL("./", location).href);
+      const home = new URL("./", location).href;
+      const shell = await caches.match(home);
       if (shell && !shell.redirected) return shell;
+
+      // **`e.request` 를 그대로 다시 던지면 안 된다.** 주소가
+      // `/index.html` 이면 308 이 돌아오고, 리다이렉트를 거친 응답을
+      // 내비게이션에 돌려주면 브라우저가 거부해 "페이지에 연결할 수 없음"
+      // 이 뜬다. 예전 가드는 캐시만 막고 네트워크 응답은 안 막았다.
+      // 항상 './' 를 새로 받아 리다이렉트 자체를 없앤다.
       try {
-        return await fetch(e.request);
-      } catch (err) {
-        return shell || Response.error();
-      }
+        const fresh = await fetch(home, { cache: "no-store" });
+        if (fresh && fresh.ok) {
+          caches.open(SHELL).then(c => c.put(home, fresh.clone())).catch(() => {});
+          return await unredirect(fresh);
+        }
+      } catch (err) { /* 아래에서 처리 */ }
+
+      // 껍데기가 리다이렉트된 것이라도 몸통은 멀쩡하다. 다시 포장해 쓴다.
+      if (shell) return await unredirect(shell);
+      return offlinePage();     // 오류 화면을 브라우저에 맡기지 않는다
     })());
     return;
   }
@@ -80,7 +130,10 @@ self.addEventListener("push", e => {
     // "starball" 로 고정하면 새 알림이 어제 것을 조용히 덮어쓴다.
     tag: d.tag || ("starball-" + new Date().toISOString().slice(0, 10)),
     renotify: true,
-    data: { url: d.url || "./index.html" },
+    // 폴백을 `./index.html` 로 두면 안 된다 — Cloudflare 가 그 주소만
+    // 308 로 되돌려서, 알림을 눌렀을 때 리다이렉트 응답이 내비게이션에
+    // 돌아가고 브라우저가 "페이지에 연결할 수 없음" 을 띄운다.
+    data: { url: d.url || "./" },
   }));
 });
 
@@ -94,11 +147,18 @@ self.addEventListener("notificationclick", e => {
     for (const w of wins) {
       if (w.url.includes(location.origin)) {
         await w.focus();
-        if ("navigate" in w) { try { await w.navigate(target); } catch {} }
-        return;
+        // navigate 가 실패해도 조용히 넘어가면 사용자는 낡은 화면을 본다.
+        // 실패하면 새 창으로라도 연다.
+        if ("navigate" in w) {
+          try { await w.navigate(target); return; } catch (err) { /* 아래로 */ }
+        } else {
+          return;
+        }
+        break;
       }
     }
-    await self.clients.openWindow(target);
+    try { await self.clients.openWindow(target); }
+    catch (err) { await self.clients.openWindow(new URL("./", location).href); }
   })());
 });
 

@@ -96,6 +96,53 @@ def test_tag_differs_by_day_and_by_kind():
     assert len(tags) == 4, tags
 
 
+def test_service_worker_never_hands_a_browser_error_to_a_navigation():
+    """`Response.error()` 를 내비게이션에 돌려주면 그게 곧 "페이지에 연결할
+    수 없음" 화면이다.
+
+    2026-09-16 신고: "알람 오면 클릭하면 오류 떠 넘어가지 않고". 서버는
+    멀쩡했다 — 알림이 담은 주소도 200 이었고 매니페스트·아이콘·api/health
+    전부 정상이었다. 원인은 서비스워커 안에 오류 화면으로 가는 길이 두 개
+    있었던 것이다.
+
+      ① 주소가 `/index.html` 이면 `fetch(e.request)` 가 308 을 받아오는데,
+         리다이렉트를 거친 응답을 내비게이션에 돌려주면 브라우저가 거부한다.
+         기존 가드(`!shell.redirected`)는 **캐시만** 막고 네트워크는 안 막았다.
+      ② 캐시가 비고 네트워크가 한 번 삐끗하면 `Response.error()` 가 나갔다.
+
+    오류 화면을 브라우저에 맡기면 사용자는 앱이 죽은 줄 안다.
+    """
+    js = io.open("web/sw.js", encoding="utf-8").read()
+    nav = js[js.index('e.request.mode === "navigate"'):js.index("today.json")]
+    assert "Response.error()" not in nav,         "내비게이션이 브라우저 오류 화면으로 떨어진다"
+    assert "offlinePage()" in nav, "대신 보여줄 화면이 없다"
+    assert "unredirect(" in nav, "리다이렉트된 응답을 다시 포장하지 않는다"
+    # 요청을 그대로 되던지면 /index.html 의 308 을 그대로 물고 온다
+    assert "fetch(e.request)" not in nav,         "내비게이션에서 요청을 그대로 되던진다 — 308 이 딸려 온다"
+
+
+def test_push_fallback_url_is_not_the_redirecting_one():
+    """푸시 본문에 url 이 없을 때의 폴백이 `./index.html` 이면 안 된다.
+
+    Cloudflare Pages 에서 `/index.html` 만 308 로 `/` 에 되돌려진다. 하필
+    그 주소를 폴백으로 두고 있었다 — 본문 파싱이 한 번만 어긋나도 알림이
+    깨진 주소를 물고 간다.
+    """
+    js = io.open("web/sw.js", encoding="utf-8").read()
+    assert 'd.url || "./index.html"' not in js, "폴백이 308 나는 주소다"
+    assert 'd.url || "./"' in js, "폴백이 없다"
+
+
+def test_shell_cache_version_moved_with_the_navigation_fix():
+    """내비게이션 처리를 고쳤으면 캐시 이름도 올려야 한다.
+
+    안 올리면 폰에 남은 옛 껍데기가 그대로 쓰여서 고친 효과가 안 난다.
+    """
+    js = io.open("web/sw.js", encoding="utf-8").read()
+    assert 'const SHELL = "starball-shell-v3"' not in js,         "껍데기 캐시 이름이 그대로다 — 옛 캐시가 계속 쓰인다"
+    assert "starball-shell-v" in js
+
+
 def test_service_worker_tag_fallback_is_not_fixed():
     """sw.js 폴백도 마찬가지다. 서버가 tag 를 못 줬을 때 "starball" 로
     떨어지면 같은 덮어쓰기가 난다."""
