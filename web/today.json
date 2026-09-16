@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-15T10:06:07+09:00",
+ "generated": "2026-09-16T10:05:10+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -10,7 +10,7 @@
   }
  },
  "game": {
-  "date": "2026-09-15",
+  "date": "2026-09-16",
   "time": "18:30",
   "stadium": "창원",
   "lg": "LG",
@@ -28,29 +28,23 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.509,
+   "prob": 0.523,
    "options": [
     {
      "label": "승",
-     "prob": 0.509
+     "prob": 0.523
     },
     {
      "label": "무",
-     "prob": 0.0194
+     "prob": 0.0197
     },
     {
      "label": "패",
-     "prob": 0.4716
+     "prob": 0.4573
     }
    ],
    "model": "learned",
    "reasons": [
-    {
-     "key": "op_sp_era",
-     "label": "상대 선발 ERA",
-     "value": "1.80",
-     "weight": -0.2214
-    },
     {
      "key": "my_win",
      "label": "LG 시즌 승률",
@@ -68,6 +62,12 @@
      "label": "홈/원정",
      "value": "원정",
      "weight": -0.0561
+    },
+    {
+     "key": "my_sp_era",
+     "label": "LG 선발 ERA",
+     "value": "4.71",
+     "weight": -0.0502
     }
    ],
    "blend": {
@@ -183,60 +183,53 @@
   }
  ],
  "joint": {
-  "prob": 0.0451,
+  "prob": 0.0463,
   "baseline": 0.0555,
   "confidence": "낮음"
  },
  "score": {
-  "lg": 5.9,
-  "opp": 5.1,
+  "lg": 5.5,
+  "opp": 5.6,
   "modal": [
-   4,
-   3
+   3,
+   4
   ]
  },
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "카라스코",
-    "era": 3.83,
-    "whip": 0.98,
-    "ip": 40.0,
-    "games": 7,
-    "spot": false,
+    "name": "박시원",
+    "era": 4.4,
+    "whip": 1.56,
+    "ip": 45.0,
+    "games": 26,
+    "spot": true,
     "vs": {
      "foe": "NC",
-     "era": 0.0,
-     "ip": 0.0,
-     "games": 0
+     "era": 19.64,
+     "ip": 3.7,
+     "games": 3
     },
     "recent": {
-     "era": 5.0,
-     "whip": 1.26,
-     "ip": 27.0,
+     "era": 4.67,
+     "whip": 1.56,
+     "ip": 17.3,
      "starts": 5,
      "asStarter": 5
     }
    },
    "opp": {
-    "name": "송명기",
-    "era": 5.11,
-    "whip": 1.62,
-    "ip": 24.7,
-    "games": 18,
-    "spot": true,
+    "name": "클레빈저",
+    "era": 0.0,
+    "whip": 0.0,
+    "ip": 0.0,
+    "games": 0,
+    "spot": false,
     "vs": {
      "foe": "LG",
      "era": 0.0,
      "ip": 0.0,
      "games": 0
-    },
-    "recent": {
-     "era": 2.7,
-     "whip": 0.7,
-     "ip": 10.0,
-     "starts": 5,
-     "asStarter": 1
     }
    }
   },
@@ -250,19 +243,21 @@
    "opp": 6.203
   },
   "form": {
-   "lg": "승승패패패",
-   "opp": "패승승승승"
+   "lg": "승승승패패",
+   "opp": "패패승승승"
   },
   "h2h": {
-   "w": 7,
+   "w": 8,
    "l": 6,
    "d": 0,
-   "games": 13
+   "games": 14
   }
  },
  "warnings": [
-  "NC 선발 송명기은 등판당 1.4이닝(18경기)로 불펜/임시 선발 패턴 — 소화 이닝 불확실"
+  "클레빈저의 최근 등판 기록을 찾지 못했습니다 — 시즌 성적만 사용",
+  "LG 선발 박시원은 등판당 1.7이닝(26경기)로 불펜/임시 선발 패턴 — 소화 이닝 불확실",
+  "박시원의 NC전 표본은 3.7이닝(3경기)뿐 — 상대 ERA를 크게 축소 적용"
  ],
- "starballs": 2,
+ "starballs": 3,
  "goal": 7
 }

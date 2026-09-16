@@ -1,30 +1,105 @@
 {
- "updated": "2026-09-15T10:06:07+09:00",
- "starballs": 2,
+ "updated": "2026-09-16T10:05:10+09:00",
+ "starballs": 3,
  "goal": 7,
- "settled": 24,
- "allHit": 2,
- "rate": 0.0833,
+ "settled": 25,
+ "allHit": 3,
+ "rate": 0.12,
  "replayed": 14,
- "live": 10,
+ "live": 11,
  "perMission": {
   "outcome": {
    "label": "승패 맞히기",
-   "hit": 13,
-   "total": 24
+   "hit": 14,
+   "total": 25
   },
   "margin": {
    "label": "득실 차 맞히기",
-   "hit": 7,
-   "total": 24
+   "hit": 8,
+   "total": 25
   },
   "lg_hr": {
    "label": "홈런 수 맞히기",
-   "hit": 9,
-   "total": 24
+   "hit": 10,
+   "total": 25
   }
  },
  "games": [
+  {
+   "date": "2026-09-16",
+   "opp": "NC",
+   "home": false,
+   "picks": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "1개"
+   },
+   "settled": false,
+   "belief": {
+    "outcome": {
+     "승": 0.523,
+     "무": 0.0197,
+     "패": 0.4573
+    },
+    "margin": {
+     "1점": 0.2287,
+     "2점": 0.1621,
+     "3점": 0.1246,
+     "5점": 0.1058,
+     "4점": 0.087,
+     "6점": 0.0802,
+     "9점 이상": 0.0785,
+     "7점": 0.0649,
+     "8점": 0.0444,
+     "0점": 0.0239
+    },
+    "lg_hr": {
+     "0개": 0.3323,
+     "1개": 0.3504,
+     "2개": 0.1996,
+     "3개": 0.0842,
+     "4개": 0.023,
+     "5개 이상": 0.0106
+    }
+   },
+   "jointProb": 0.0463,
+   "baseline": 0.0555,
+   "expScore": {
+    "lg": 5.5,
+    "opp": 5.6,
+    "modal": [
+     3,
+     4
+    ]
+   },
+   "starters": {
+    "lg": {
+     "name": "박시원",
+     "era": 4.4,
+     "spot": true
+    },
+    "opp": {
+     "name": "클레빈저",
+     "era": 0.0,
+     "spot": false
+    }
+   },
+   "params": {
+    "blend": 0.7,
+    "calib": 0.76,
+    "version": "2026-09-16"
+   },
+   "greedy": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "1개"
+   },
+   "greedyProb": 0.0463,
+   "actual": null,
+   "hits": null,
+   "earned": null,
+   "score": null
+  },
   {
    "date": "2026-09-15",
    "opp": "NC",
@@ -34,7 +109,7 @@
     "margin": "1점",
     "lg_hr": "1개"
    },
-   "settled": false,
+   "settled": true,
    "belief": {
     "outcome": {
      "승": 0.509,
@@ -95,10 +170,21 @@
     "lg_hr": "1개"
    },
    "greedyProb": 0.0451,
-   "actual": null,
-   "hits": null,
-   "earned": null,
-   "score": null
+   "actual": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "1개"
+   },
+   "hits": {
+    "outcome": true,
+    "margin": true,
+    "lg_hr": true
+   },
+   "earned": true,
+   "score": {
+    "lg": 3,
+    "opp": 2
+   }
   },
   {
    "date": "2026-09-13",
