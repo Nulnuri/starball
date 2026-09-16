@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-16T10:05:10+09:00",
+ "generated": "2026-09-16T17:15:50+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -28,19 +28,19 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.523,
+   "prob": 0.5263,
    "options": [
     {
      "label": "승",
-     "prob": 0.523
+     "prob": 0.5263
     },
     {
      "label": "무",
-     "prob": 0.0197
+     "prob": 0.0194
     },
     {
      "label": "패",
-     "prob": 0.4573
+     "prob": 0.4542
     }
    ],
    "model": "learned",
@@ -48,14 +48,8 @@
     {
      "key": "my_win",
      "label": "LG 시즌 승률",
-     "value": "0.557",
-     "weight": 0.09
-    },
-    {
-     "key": "op_form10",
-     "label": "상대 최근 10경기",
-     "value": "0.700",
-     "weight": -0.0666
+     "value": "0.561",
+     "weight": 0.0945
     },
     {
      "key": "home",
@@ -68,12 +62,18 @@
      "label": "LG 선발 ERA",
      "value": "4.71",
      "weight": -0.0502
+    },
+    {
+     "key": "my_form10",
+     "label": "LG 최근 10경기",
+     "value": "0.600",
+     "weight": 0.0344
     }
    ],
    "blend": {
     "model": 0.3,
-    "teamWin": 0.557,
-    "modelPick": "패",
+    "teamWin": 0.561,
+    "modelPick": "승",
     "priorPick": "승"
    },
    "confidence": "낮음",
@@ -148,7 +148,7 @@
    "options": [
     {
      "label": "0개",
-     "prob": 0.3323
+     "prob": 0.3332
     },
     {
      "label": "1개",
@@ -156,19 +156,19 @@
     },
     {
      "label": "2개",
-     "prob": 0.1996
+     "prob": 0.1993
     },
     {
      "label": "3개",
-     "prob": 0.0842
+     "prob": 0.0838
     },
     {
      "label": "4개",
-     "prob": 0.023
+     "prob": 0.0228
     },
     {
      "label": "5개 이상",
-     "prob": 0.0106
+     "prob": 0.0105
     }
    ],
    "model": "learned",
@@ -177,13 +177,13 @@
      "key": "park",
      "label": "구장",
      "value": "1.24",
-     "weight": 0.2656
+     "weight": 0.2627
     }
    ]
   }
  ],
  "joint": {
-  "prob": 0.0463,
+  "prob": 0.0466,
   "baseline": 0.0555,
   "confidence": "낮음"
  },
@@ -235,8 +235,8 @@
   },
   "park": {
    "name": "창원",
-   "raw": 1.2421,
-   "applied": 1.121
+   "raw": 1.2395,
+   "applied": 1.12
   },
   "bullpen": {
    "lg": 5.541,
