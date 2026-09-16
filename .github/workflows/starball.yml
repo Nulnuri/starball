@@ -222,18 +222,86 @@ jobs:
           fi
           git commit -m "데이터 갱신 $(date -u +%Y-%m-%d)"
 
-          # 사용자가 깃헙 웹에서 파일을 고쳤으면(문항 정의 등) push 가 거부된다.
-          # 한 번 받아서 얹고 다시 시도한다.
+          # 사용자가 깃헙 웹에서 파일을 고쳤거나 다른 실행이 먼저 밀었으면
+          # push 가 거부된다. 그때 받아서 얹고 다시 시도한다.
+          #
+          # **rebase 로 얹으면 안 된다.** 여기서 다루는 파일은 전부 생성물
+          # 이라, 두 실행이 같은 날 돌면 같은 줄(생성 시각)이 양쪽 다 바뀌어
+          # 반드시 충돌한다. rebase 가 충돌하면 작업 트리에 `<<<<<<<` 표시가
+          # 남는데, 뒤따르는 배포 단계는 always() 라서 **그 깨진 트리를 그대로
+          # 배포한다.** 2026-09-16 에 실제로 그렇게 today.json·history.json·
+          # starball.ics 가 충돌 표시를 단 채 실주소에 올라갔다. 앱이 JSON 을
+          # 못 읽어 모두에게 깨졌고, 배포는 '성공' 으로 끝나 아무 표시도 없었다.
+          #
+          # 생성물은 어느 쪽이든 최신으로 다시 만들면 되므로 병합할 이유가
+          # 없다. 원격을 기준으로 삼고 우리가 만든 파일을 그 위에 얹는다.
           for i in 1 2 3; do
             if git push; then
               echo "push 성공"
               exit 0
             fi
-            echo "push 거부 — 원격 변경을 받아 다시 시도 ($i/3)"
-            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || exit 1
+            echo "push 거부 — 원격을 기준으로 다시 얹는다 ($i/3)"
+            keep="$(mktemp -d)"
+            tar cf "$keep/gen.tar" web gamelog_*.json 2>/dev/null || true
+            git fetch origin "${GITHUB_REF_NAME}" || exit 1
+            git reset --hard "origin/${GITHUB_REF_NAME}" || exit 1
+            tar xf "$keep/gen.tar" -C . 2>/dev/null || true
+            rm -rf "$keep"
+            git add -A web
+            git add -A -- 'gamelog_*.json' || true
+            if git diff --staged --quiet; then
+              echo "원격과 같아짐 — 커밋할 것이 없다"
+              exit 0
+            fi
+            git commit -m "데이터 갱신 $(date -u +%Y-%m-%d)"
           done
           echo "::error::push 를 3번 시도했으나 실패했습니다."
           exit 1
+
+      # 배포하기 전에 내보낼 파일이 멀쩡한지 본다.
+      #
+      # 이 검사가 없어서 충돌 표시가 붙은 JSON 이 실주소에 올라갔다. 배포
+      # 단계는 always() 로 도는데, 앞 단계가 깨져도 멈추지 않았다. 여기서
+      # 걸러야 한다 — 배포된 뒤에 알면 이미 모두가 깨진 화면을 본 뒤다.
+      - name: 배포 전 파일 검사
+        id: validate
+        if: always() && (github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch')
+        run: |
+          set -e
+          bad=0
+
+          # 1) 병합 충돌 표시가 남아 있으면 안 된다
+          if grep -rlE '^(<{7}|={7}|>{7})( |$)' web 2>/dev/null; then
+            echo "::error::web/ 에 병합 충돌 표시가 남아 있습니다"
+            bad=1
+          fi
+
+          # 2) 내보내는 JSON 은 전부 파싱돼야 한다
+          for f in web/*.json; do
+            [ -e "$f" ] || continue
+            python -c "import json,sys;json.load(open(sys.argv[1],encoding='utf-8'))" "$f" \
+              || { echo "::error::$f 가 올바른 JSON 이 아닙니다"; bad=1; }
+          done
+
+          # 3) 오늘 예측은 오늘 것이어야 한다(경기 없는 날은 건너뛴다)
+          python - <<'PY'
+          import json, os, sys
+          from datetime import datetime, timedelta, timezone
+          p = "web/today.json"
+          if os.path.exists(p):
+              try:
+                  d = json.load(open(p, encoding="utf-8"))
+              except Exception as e:
+                  print(f"::error::today.json 을 읽을 수 없습니다: {e}")
+                  sys.exit(1)
+              today = datetime.now(timezone(timedelta(hours=9))).date().isoformat()
+              got = (d.get("game") or {}).get("date")
+              if got and got != today:
+                  print(f"::warning::today.json 이 {got} 것입니다 (오늘은 {today})")
+          PY
+
+          [ "$bad" = "0" ] || exit 1
+          echo "내보낼 파일 검사 통과"
 
       - name: Cloudflare Pages 배포
         # 부가 배포다. 깃헙 페이지만으로도 앱은 완전히 돌아가므로, 여기가
@@ -241,7 +309,10 @@ jobs:
         # 설정 문제 하나로 매일 빨간 X 가 뜨고, 정작 알림·데이터는 정상인데
         # 사용자가 고장으로 오해한다.
         continue-on-error: true
-        if: always() && (github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch')
+        # 배포 전 검사를 통과했을 때만 올린다. 이 조건이 없어서 충돌 표시가
+        # 붙은 파일이 그대로 실주소에 배포된 적이 있다 (2026-09-16).
+        if: always() && steps.validate.outcome == 'success'
+          && (github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch')
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -288,7 +359,9 @@ jobs:
           PY
 
       - name: 깃헙 페이지에 웹앱 배포
-        if: always() && (github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch')
+        # 검사를 통과했을 때만. 깨진 파일을 거울 주소에도 올리지 않는다.
+        if: always() && steps.validate.outcome == 'success'
+          && (github.event.schedule == '0 1 * * *' || github.event_name == 'workflow_dispatch')
         uses: actions/upload-pages-artifact@v3
         with:
           path: web

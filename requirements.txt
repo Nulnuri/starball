@@ -9,3 +9,4 @@ numpy>=1.26          # starball_predictor 의 몬테카를로에서 직접 쓴�
 pywebpush>=1.14
 py-vapid>=1.9
 cryptography>=42.0
+pyyaml>=6

@@ -96,6 +96,53 @@ def test_tag_differs_by_day_and_by_kind():
     assert len(tags) == 4, tags
 
 
+def test_deploy_is_gated_on_a_file_check():
+    """깨진 파일이 실주소로 나가지 못하게 막혀 있어야 한다.
+
+    2026-09-16 에 실제로 나갔다. 커밋 단계에서 push 가 거부되자
+    `git pull --rebase` 가 생성물(today.json·history.json)에서 충돌했고,
+    작업 트리에 `<<<<<<<` 표시가 남았다. 그런데 배포 단계는 `always()` 라서
+    **그 깨진 트리를 그대로 배포했다.** 앱이 JSON 을 못 읽어 모두에게
+    깨졌는데, 배포는 '성공' 으로 끝나 아무 표시도 없었다.
+
+    두 가지가 필요하다 — 나가기 전에 검사할 것, 그리고 검사를 통과했을
+    때만 배포할 것.
+    """
+    import yaml
+    wf = yaml.safe_load(io.open(".github/workflows/starball.yml",
+                                encoding="utf-8"))
+    steps = wf["jobs"]["predict"]["steps"]
+    names = [s.get("name", "") for s in steps]
+
+    check = next((s for s in steps if s.get("id") == "validate"), None)
+    assert check is not None, "배포 전 파일 검사 단계가 없다"
+    body = check.get("run") or ""
+    assert "<{7}" in body or "<<<<<<<" in body, "충돌 표시를 검사하지 않는다"
+    assert "json.load" in body, "JSON 이 파싱되는지 검사하지 않는다"
+
+    # 검사는 배포보다 앞서야 한다
+    i_chk = names.index(check["name"])
+    for dep in ("Cloudflare Pages 배포", "깃헙 페이지에 웹앱 배포"):
+        i_dep = names.index(dep)
+        assert i_chk < i_dep, f"{dep} 가 검사보다 먼저 돈다"
+        cond = str(steps[i_dep].get("if", ""))
+        assert "steps.validate.outcome == 'success'" in cond,             f"{dep} 가 검사 결과를 보지 않는다 — 깨진 파일도 나간다"
+
+
+def test_commit_step_never_leaves_conflict_markers():
+    """생성물은 병합하지 않는다 — 병합하면 반드시 충돌한다.
+
+    today.json·history.json 은 매 실행마다 생성 시각이 바뀐다. 두 실행이
+    같은 날 겹치면 그 줄에서 100% 충돌하고, rebase 는 작업 트리에 충돌
+    표시를 남긴 채 멈춘다. 원격을 기준으로 삼고 우리 파일을 얹으면
+    충돌 자체가 생기지 않는다.
+    """
+    wf = io.open(".github/workflows/starball.yml", encoding="utf-8").read()
+    seg = wf[wf.index("갱신된 데이터 커밋"):wf.index("배포 전 파일 검사")]
+    assert "git pull --rebase" not in seg,         "생성물을 rebase 로 병합한다 — 충돌 표시가 배포될 수 있다"
+    assert "git reset --hard" in seg, "원격 기준으로 다시 얹지 않는다"
+
+
 def test_service_worker_never_hands_a_browser_error_to_a_navigation():
     """`Response.error()` 를 내비게이션에 돌려주면 그게 곧 "페이지에 연결할
     수 없음" 화면이다.
