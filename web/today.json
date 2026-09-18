@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-16T17:39:15+09:00",
+ "generated": "2026-09-18T09:37:58+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -10,11 +10,11 @@
   }
  },
  "game": {
-  "date": "2026-09-16",
+  "date": "2026-09-18",
   "time": "18:30",
-  "stadium": "창원",
+  "stadium": "수원",
   "lg": "LG",
-  "opp": "NC",
+  "opp": "KT",
   "lgIsHome": false
  },
  "missions": [
@@ -28,52 +28,52 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.5263,
+   "prob": 0.5088,
    "options": [
     {
      "label": "승",
-     "prob": 0.5263
+     "prob": 0.5088
     },
     {
      "label": "무",
-     "prob": 0.0194
+     "prob": 0.0171
     },
     {
      "label": "패",
-     "prob": 0.4542
+     "prob": 0.4741
     }
    ],
    "model": "learned",
    "reasons": [
     {
+     "key": "op_win",
+     "label": "상대 시즌 승률",
+     "value": "0.598",
+     "weight": -0.1431
+    },
+    {
      "key": "my_win",
      "label": "LG 시즌 승률",
-     "value": "0.561",
-     "weight": 0.0945
+     "value": "0.564",
+     "weight": 0.0989
     },
     {
-     "key": "home",
-     "label": "홈/원정",
-     "value": "원정",
-     "weight": -0.0561
+     "key": "op_sp_era",
+     "label": "상대 선발 ERA",
+     "value": "3.15",
+     "weight": -0.0955
     },
     {
-     "key": "my_sp_era",
-     "label": "LG 선발 ERA",
-     "value": "4.71",
-     "weight": -0.0502
-    },
-    {
-     "key": "my_form10",
-     "label": "LG 최근 10경기",
-     "value": "0.600",
-     "weight": 0.0344
+     "key": "op_form10",
+     "label": "상대 최근 10경기",
+     "value": "0.700",
+     "weight": -0.0666
     }
    ],
    "blend": {
     "model": 0.3,
-    "teamWin": 0.561,
-    "modelPick": "승",
+    "teamWin": 0.564,
+    "modelPick": "패",
     "priorPick": "승"
    },
    "confidence": "낮음",
@@ -138,37 +138,37 @@
    "n": 3,
    "key": "lg_hr",
    "label": "홈런 수 맞히기",
-   "pick": "1개",
+   "pick": "0개",
    "skill": {
     "hit": 34.5,
     "base": 33.6,
     "gain": 0.9
    },
-   "prob": 0.3504,
+   "prob": 0.4793,
    "options": [
     {
      "label": "0개",
-     "prob": 0.3332
+     "prob": 0.4793
     },
     {
      "label": "1개",
-     "prob": 0.3504
+     "prob": 0.3278
     },
     {
      "label": "2개",
-     "prob": 0.1993
+     "prob": 0.1423
     },
     {
      "label": "3개",
-     "prob": 0.0838
+     "prob": 0.0407
     },
     {
      "label": "4개",
-     "prob": 0.0228
+     "prob": 0.0068
     },
     {
      "label": "5개 이상",
-     "prob": 0.0105
+     "prob": 0.0032
     }
    ],
    "model": "learned",
@@ -176,20 +176,20 @@
     {
      "key": "park",
      "label": "구장",
-     "value": "1.24",
-     "weight": 0.2627
+     "value": "0.85",
+     "weight": 0.1675
     }
    ]
   }
  ],
  "joint": {
-  "prob": 0.0466,
+  "prob": 0.0541,
   "baseline": 0.0555,
   "confidence": "낮음"
  },
  "score": {
-  "lg": 5.5,
-  "opp": 5.6,
+  "lg": 4.3,
+  "opp": 5.5,
   "modal": [
    3,
    4
@@ -198,65 +198,70 @@
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "박시원",
-    "era": 4.4,
-    "whip": 1.56,
-    "ip": 45.0,
-    "games": 26,
-    "spot": true,
+    "name": "톨허스트",
+    "era": 4.19,
+    "whip": 1.24,
+    "ip": 139.7,
+    "games": 25,
+    "spot": false,
     "vs": {
-     "foe": "NC",
-     "era": 19.64,
-     "ip": 3.7,
-     "games": 3
+     "foe": "KT",
+     "era": 2.77,
+     "ip": 13.0,
+     "games": 2
     },
     "recent": {
-     "era": 4.67,
-     "whip": 1.56,
-     "ip": 17.3,
+     "era": 2.97,
+     "whip": 1.02,
+     "ip": 30.3,
      "starts": 5,
      "asStarter": 5
     }
    },
    "opp": {
-    "name": "클레빈저",
-    "era": 0.0,
-    "whip": 0.0,
-    "ip": 0.0,
-    "games": 0,
+    "name": "로건",
+    "era": 2.97,
+    "whip": 1.36,
+    "ip": 72.7,
+    "games": 13,
     "spot": false,
     "vs": {
      "foe": "LG",
-     "era": 0.0,
-     "ip": 0.0,
-     "games": 0
+     "era": 1.8,
+     "ip": 5.0,
+     "games": 1
+    },
+    "recent": {
+     "era": 2.48,
+     "whip": 1.38,
+     "ip": 29.0,
+     "starts": 5,
+     "asStarter": 5
     }
    }
   },
   "park": {
-   "name": "창원",
-   "raw": 1.2395,
-   "applied": 1.12
+   "name": "수원",
+   "raw": 0.8485,
+   "applied": 0.924
   },
   "bullpen": {
    "lg": 5.541,
-   "opp": 6.203
+   "opp": 5.063
   },
   "form": {
-   "lg": "승승승패패",
-   "opp": "패패승승승"
+   "lg": "승승승승패",
+   "opp": "무승승승승"
   },
   "h2h": {
-   "w": 8,
-   "l": 6,
+   "w": 5,
+   "l": 10,
    "d": 0,
-   "games": 14
+   "games": 15
   }
  },
  "warnings": [
-  "클레빈저의 최근 등판 기록을 찾지 못했습니다 — 시즌 성적만 사용",
-  "LG 선발 박시원은 등판당 1.7이닝(26경기)로 불펜/임시 선발 패턴 — 소화 이닝 불확실",
-  "박시원의 NC전 표본은 3.7이닝(3경기)뿐 — 상대 ERA를 크게 축소 적용"
+  "로건의 LG전 표본은 5.0이닝(1경기)뿐 — 상대 ERA를 크게 축소 적용"
  ],
  "starballs": 3,
  "goal": 7
