@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-18T09:37:58+09:00",
+ "generated": "2026-09-18T10:05:06+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -144,23 +144,23 @@
     "base": 33.6,
     "gain": 0.9
    },
-   "prob": 0.4793,
+   "prob": 0.4789,
    "options": [
     {
      "label": "0개",
-     "prob": 0.4793
+     "prob": 0.4789
     },
     {
      "label": "1개",
-     "prob": 0.3278
+     "prob": 0.3279
     },
     {
      "label": "2개",
-     "prob": 0.1423
+     "prob": 0.1424
     },
     {
      "label": "3개",
-     "prob": 0.0407
+     "prob": 0.0408
     },
     {
      "label": "4개",
@@ -177,13 +177,13 @@
      "key": "park",
      "label": "구장",
      "value": "0.85",
-     "weight": 0.1675
+     "weight": 0.1663
     }
    ]
   }
  ],
  "joint": {
-  "prob": 0.0541,
+  "prob": 0.054,
   "baseline": 0.0555,
   "confidence": "낮음"
  },
@@ -242,8 +242,8 @@
   },
   "park": {
    "name": "수원",
-   "raw": 0.8485,
-   "applied": 0.924
+   "raw": 0.8496,
+   "applied": 0.925
   },
   "bullpen": {
    "lg": 5.541,
