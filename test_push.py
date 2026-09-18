@@ -96,29 +96,36 @@ def test_tag_differs_by_day_and_by_kind():
     assert len(tags) == 4, tags
 
 
-def test_lg_link_forces_the_app_open_on_android():
-    """브라우저로는 어떤 주소로도 스타볼 화면에 닿지 못한다.
+def test_lg_link_launches_the_app_without_a_data_url():
+    """intent 에 주소를 붙이면 앱이 깔려 있어도 스토어로 떨어진다.
 
-    실측 2026-09-18
-        /starball      → 500  '오류가 발생하였습니다'
-        /app/starball  → 302 → /login-check → '로그인이 필요한 서비스 입니다'
+    2026-09-18, 세 번 틀리고 알아냈다.
 
-    스타볼은 앱 내부 화면이고, 공식 홈페이지도
-    `app.webToAppFunction({'path':'/starball'},'navigateTo')` 로만 연다.
+        1. /starball          → 500 오류 화면
+        2. /app/starball      → 로그인 확인 페이지 (스타볼 아님)
+        3. intent + 위 주소   → **앱이 있는데도 플레이스토어로 갔다**
 
-    그래서 안드로이드는 `intent:` 로 **패키지를 직접 지정해** 앱을 띄운다.
-    App Links 검증에만 기대면 사용자가 '지원되는 링크 열기' 를 꺼 뒀을 때
-    그냥 브라우저에서 열려 위의 오류를 다시 본다 — 실제로 그렇게 됐다.
-    앱이 없으면 browser_fallback_url 로 플레이스토어에 간다.
+    3번이 핵심이다. intent 에 데이터 주소를 붙이면 안드로이드가 '그 앱에서
+    이 주소를 열 수 있는 화면' 을 찾는다. LG 앱은 그 경로를 받도록 만들어져
+    있지 않아 못 찾고 browser_fallback_url 로 떨어진다. assetlinks.json 의
+    handle_all_urls 는 사이트 쪽 허락일 뿐, 앱이 실제로 받느냐는 별개다.
 
-    패키지명은 추측이 아니라 LG 가 공개한 것이다:
-        lgtwins.com/.well-known/assetlinks.json → com.lgsports.lgtwins.mobileapp
+    주소를 빼고 패키지명만 주면 앱의 첫 화면이 열린다 — 깔려 있으면 반드시
+    된다. 스타볼까지 바로 가지는 못하지만 스토어로 튕기는 것보다 낫다.
     """
     html = io.open("web/index.html", encoding="utf-8").read()
-    assert "com.lgsports.lgtwins.mobileapp" in html, "안드로이드 패키지명이 없다"
-    assert "intent://" in html, "intent 로 앱을 강제로 열지 않는다"
-    assert "S.browser_fallback_url" in html, "앱이 없을 때 갈 곳이 없다"
-    assert "apps.apple.com" in html, "아이폰 대체 경로가 없다"
+    i = html.find("const LG_APP")
+    assert i >= 0, "LG_APP 선언을 찾지 못했다"
+    # intent 문자열 안에 세미콜론이 많아 `[^;]+;` 로는 잘린다.
+    # 선언이 끝나는 빈 줄까지 통째로 본다.
+    end = html.find(chr(10) + chr(10), i)
+    decl = html[i:end if end > 0 else i + 400]
+
+    assert "intent:#Intent" in decl, "앱을 띄우는 intent 가 아니다"
+    assert "com.lgsports.lgtwins.mobileapp" in html, "패키지명이 없다"
+    assert "S.browser_fallback_url" in decl, "앱이 없을 때 갈 곳이 없다"
+    # 데이터 주소를 붙이면 안 된다 — 그게 스토어로 튕긴 원인이다
+    assert "intent://" not in decl,         "intent 에 주소가 붙어 있다 — 앱이 있어도 스토어로 간다"
 
     for line in html.splitlines():
         t = line.strip()
@@ -127,7 +134,9 @@ def test_lg_link_forces_the_app_open_on_android():
         assert "lgtwins.com/starball" not in line,             f"500 나는 옛 주소가 남아 있다: {t[:70]}"
 
     i = html.index("${LG_APP}")
-    assert 'target="_blank"' not in html[i - 120:i + 120],         "새 탭으로 연다 — intent 가 앱으로 넘어가지 못한다"
+    assert 'target="_blank"' not in html[i-120:i+120],         "새 탭으로 연다 — intent 가 앱으로 넘어가지 못한다"
+    # 앱 첫 화면으로 가므로 한 단계 더 눌러야 한다는 안내가 있어야 한다
+    assert "스타볼 모으기" in html, "앱에서 무엇을 눌러야 하는지 안내가 없다"
 
 
 def test_build_stamp_is_visible_on_screen():
