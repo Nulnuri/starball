@@ -96,6 +96,41 @@ def test_tag_differs_by_day_and_by_kind():
     assert len(tags) == 4, tags
 
 
+def test_starball_link_points_at_the_app_path():
+    """스타볼은 LG트윈스 앱 전용이라 `/starball` 은 브라우저에서 500 이다.
+
+    2026-09-18 에 사용자 화면으로 확인했다 — 알림을 눌러 우리 앱까지 잘
+    들어온 뒤, '입력하러 가기' 를 누르자 lgtwins.com 의 "오류가 발생
+    하였습니다" 페이지가 떴다. 우리 앱도 알림도 멀쩡했고, **그 링크가
+    처음부터 동작한 적이 없었다.**
+
+    공식 홈페이지는 스타볼을 `app.webToAppFunction({'path':'/starball'})`
+    로 건다 — 앱 웹뷰 안에서만 존재하는 함수다. 웹 주소가 아예 없다.
+
+    올바른 통로는 `/app/*` 이고, 그건 추측이 아니라 LG 가 공개한 앱 연결
+    설정에 적혀 있다:
+
+        lgtwins.com/.well-known/assetlinks.json
+            com.lgsports.lgtwins.mobileapp   (안드로이드, 전 주소)
+        lgtwins.com/.well-known/apple-app-site-association
+            com.lgsports.lgtwins.mobile      ("/app/*" 만)
+
+    실측: /starball → 500,  /app/starball → 302 → /login-check.
+    """
+    html = io.open("web/index.html", encoding="utf-8").read()
+    import re
+    m = re.search(r'const LG_APP = "([^"]+)"', html)
+    assert m, "LG_APP 선언을 찾지 못했다"
+    url = m.group(1)
+    assert "/app/" in url, f"앱 경로가 아니다 — 브라우저에서 500 이 난다: {url}"
+    assert url == "https://www.lgtwins.com/app/starball", url
+    # 옛 주소가 어디에도 남아 있으면 안 된다 (설명 안의 인용은 제외)
+    for line in html.splitlines():
+        if line.lstrip().startswith("//"):
+            continue
+        assert "lgtwins.com/starball" not in line,             f"500 나는 옛 주소가 코드에 남아 있다: {line.strip()[:70]}"
+
+
 def test_deploy_is_gated_on_a_file_check():
     """깨진 파일이 실주소로 나가지 못하게 막혀 있어야 한다.
 
