@@ -152,27 +152,39 @@
 </div>
 
 <script>
-// 스타볼은 LG트윈스 **앱 전용** 기능이다. 웹 페이지가 아예 없다.
+// 스타볼은 LG트윈스 **앱 전용** 기능이다. 브라우저로 여는 웹 주소가 없다.
 //
 // 공식 홈페이지도 이렇게 건다:
 //   <a href="javascript:app.webToAppFunction({'path':'/starball'},'navigateTo')">
-// `app.webToAppFunction` 은 앱의 웹뷰 안에서만 존재하는 함수라 브라우저에는
-// 없다. 스티커 모으기·출석체크·스마트 티켓도 전부 같은 방식이다.
+// 앱의 웹뷰 안에서만 존재하는 함수로, 앱 내부 화면을 여는 것이다.
 //
-// 그래서 `/starball` 을 브라우저로 열면 **HTTP 500** 이 나고 "오류가
-// 발생하였습니다" 화면이 뜬다. 알림을 눌러 우리 앱까지 잘 들어와 놓고
-// 마지막 버튼에서 막혔다는 신고가 이것이었다 — 이 주소는 처음부터
-// 동작한 적이 없다.
+// 실측 2026-09-18
+//   /starball      → 500  '오류가 발생하였습니다'
+//   /app/starball  → 302 → /login-check → '로그인이 필요한 서비스 입니다'
 //
-// 올바른 통로는 `/app/*` 다. lgtwins.com/.well-known/ 의 앱 연결 설정이
-// 그렇게 선언한다:
-//   assetlinks.json             com.lgsports.lgtwins.mobileapp (안드로이드, 전 주소)
-//   apple-app-site-association  com.lgsports.lgtwins.mobile ('/app/*' 만)
+// 즉 브라우저로는 어떤 주소로도 스타볼 화면에 닿지 못한다. 앱을 열어야 한다.
 //
-// 실측 2026-09-18:  /starball → 500        (오류 화면)
-//                  /app/starball → 302 → /login-check  (정상)
-// 앱이 깔려 있으면 앱이 가로채 스타볼 화면을 열고, 없으면 로그인으로 간다.
-const LG_APP = "https://www.lgtwins.com/app/starball";
+// 안드로이드는 intent: 로 패키지를 직접 지정해 앱을 강제로 띄운다. 링크
+// 검증(App Links)에 기대면 사용자가 '지원되는 링크 열기' 를 꺼 뒀을 때
+// 그냥 브라우저에서 열려 위의 오류를 다시 본다. 패키지명은 LG 가 공개한
+// lgtwins.com/.well-known/assetlinks.json 에서 확인했다.
+// 앱이 없으면 S.browser_fallback_url 로 플레이스토어에 간다.
+//
+// 아이폰은 intent: 를 모른다. apple-app-site-association 이 '/app/*' 를
+// 앱에 연결해 두었으므로 https 주소를 그대로 쓴다.
+const LG_PKG = "com.lgsports.lgtwins.mobileapp";
+const LG_WEB = "https://www.lgtwins.com/app/starball";
+const LG_STORE_AOS = "https://play.google.com/store/apps/details?id=" + LG_PKG;
+const LG_STORE_IOS = "https://apps.apple.com/kr/app/id1191383137";
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+const LG_APP = IS_IOS ? LG_WEB :
+  "intent://www.lgtwins.com/app/starball#Intent;scheme=https;package=" + LG_PKG +
+  ";S.browser_fallback_url=" + encodeURIComponent(LG_STORE_AOS) + ";end";
+
+// 폰이 어느 판을 받았는지 화면에서 바로 알 수 있어야 한다. 이게 없어서
+// '고쳤는데 그대로다' 가 캐시 탓인지 수정이 틀린 탓인지 구분하지 못했다.
+const BUILD = "2026-09-18c";
 const view = document.getElementById("view");
 let D = null, H = null, tab = "today";
 
@@ -225,7 +237,7 @@ function stampRow() {
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/>
       <path d="M12 7v5l3 2"/></svg>
-    <span>${when} 계산 (${ago})${note}</span></div>`;
+    <span>${when} 계산 (${ago})${note} · 앱 ${BUILD}</span></div>`;
 }
 
 // 확신도 배지. 문턱과 적중률은 학습 때 실측으로 잰 값이다.
@@ -334,7 +346,7 @@ function viewToday() {
   </div>
 
   <div class="grow"></div>
-  <a class="btn" href="${LG_APP}" target="_blank" rel="noopener">LG 트윈스 앱 열기
+      <a class="btn" href="${LG_APP}" rel="noopener">LG 트윈스 앱에서 입력
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M9 7h8v8"/></svg></a>`;
 }
 
