@@ -1,6 +1,6 @@
 // 홈화면에서 열었을 때 껍데기가 즉시 뜨게 하고, 데이터는 항상 새로 받는다.
 // 예측값을 캐시에서 주면 어제 값을 보여주게 되므로 절대 캐시하지 않는다.
-const SHELL = "starball-shell-v4";
+const SHELL = "starball-shell-v5";
 const FILES = ["./", "./manifest.webmanifest",
                "./icon-192.png", "./icon-512.png"];
 
@@ -71,24 +71,43 @@ self.addEventListener("fetch", e => {
     if (here !== root) return;                    // 문서 등은 그냥 네트워크
     e.respondWith((async () => {
       const home = new URL("./", location).href;
-      const shell = await caches.match(home);
-      if (shell && !shell.redirected) return shell;
 
+      // **네트워크 우선이어야 한다.** 예전에는 캐시를 먼저 돌려줬는데,
+      // 그러면 껍데기를 고쳐 배포해도 폰에 영영 가지 않는다. sw.js 가
+      // 바뀔 때만 다시 받으니까. 실제로 'LG 앱으로 가기' 링크가 틀려서
+      // 고쳤는데, 그 수정이 이미 설치된 폰에는 닿지 않았다.
+      //
+      // 그렇다고 네트워크만 기다리면 지하철에서 앱이 안 열린다. 그래서
+      // 짧게 기다려 보고(2.5초), 늦으면 캐시를 주되 받아온 것은 캐시에
+      // 반영해 다음 번에 최신이 되게 한다.
+      //
       // **`e.request` 를 그대로 다시 던지면 안 된다.** 주소가
       // `/index.html` 이면 308 이 돌아오고, 리다이렉트를 거친 응답을
       // 내비게이션에 돌려주면 브라우저가 거부해 "페이지에 연결할 수 없음"
-      // 이 뜬다. 예전 가드는 캐시만 막고 네트워크 응답은 안 막았다.
-      // 항상 './' 를 새로 받아 리다이렉트 자체를 없앤다.
+      // 이 뜬다. 항상 './' 를 새로 받아 리다이렉트 자체를 없앤다.
+      const net = (async () => {
+        const r = await fetch(home, { cache: "no-store" });
+        if (!r || !r.ok) throw new Error("bad response");
+        caches.open(SHELL).then(c => c.put(home, r.clone())).catch(() => {});
+        return r;
+      })();
+
+      const slow = new Promise(res => setTimeout(() => res(null), 2500));
       try {
-        const fresh = await fetch(home, { cache: "no-store" });
-        if (fresh && fresh.ok) {
-          caches.open(SHELL).then(c => c.put(home, fresh.clone())).catch(() => {});
-          return await unredirect(fresh);
-        }
+        const won = await Promise.race([net.catch(() => null), slow]);
+        if (won) return await unredirect(won);
       } catch (err) { /* 아래에서 처리 */ }
 
-      // 껍데기가 리다이렉트된 것이라도 몸통은 멀쩡하다. 다시 포장해 쓴다.
+      // 네트워크가 늦거나 끊겼다. 캐시로 화면을 띄운다. 위의 net 은 계속
+      // 돌면서 캐시를 갱신하므로 다음 번 열 때는 최신이 된다.
+      const shell = await caches.match(home);
       if (shell) return await unredirect(shell);
+
+      // 캐시도 없다 — 첫 실행인데 오프라인인 경우다.
+      try {
+        const last = await net;
+        if (last) return await unredirect(last);
+      } catch (err) { /* 아래 */ }
       return offlinePage();     // 오류 화면을 브라우저에 맡기지 않는다
     })());
     return;

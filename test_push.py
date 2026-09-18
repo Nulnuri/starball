@@ -96,6 +96,34 @@ def test_tag_differs_by_day_and_by_kind():
     assert len(tags) == 4, tags
 
 
+def test_app_shell_is_network_first_so_deploys_reach_phones():
+    """껍데기를 캐시 우선으로 주면 배포해도 폰에 영영 가지 않는다.
+
+    2026-09-18 에 깨달았다. 'LG 앱으로 가기' 링크가 틀려서 고쳐 배포했는데,
+    서비스워커가 `caches.match()` 를 먼저 돌려주고 있었다. 껍데기는 sw.js 가
+    바뀔 때만 다시 받으므로, **index.html 만 고친 배포는 이미 설치된 폰에
+    닿지 않는다.** 여태 화면을 고친 것들이 사용자에게 갔는지도 알 수 없다.
+
+    네트워크를 먼저 보되 짧게만 기다린다(2.5초). 늦으면 캐시로 띄우고,
+    받아온 것은 캐시에 넣어 다음 번에 최신이 되게 한다. 지하철에서도
+    앱은 열려야 하니까.
+    """
+    js = io.open("web/sw.js", encoding="utf-8").read()
+    nav = js[js.index('e.request.mode === "navigate"'):js.index("today.json")]
+
+    # 캐시를 먼저 돌려주고 끝내면 안 된다
+    assert "if (shell && !shell.redirected) return shell;" not in nav,         "껍데기가 캐시 우선이다 — 배포가 폰에 가지 않는다"
+    # 네트워크를 먼저 시도해야 한다
+    i_fetch = nav.index("fetch(home")
+    i_cache = nav.index("caches.match(home)")
+    assert i_fetch < i_cache, "캐시를 네트워크보다 먼저 본다"
+    # 그래도 오프라인에서 열려야 한다
+    assert "caches.match(home)" in nav, "오프라인 대비가 없다"
+    assert "offlinePage()" in nav, "최후의 화면이 없다"
+    # 무한정 기다리면 안 된다
+    assert "setTimeout" in nav, "네트워크를 기다리는 시간 제한이 없다"
+
+
 def test_starball_link_points_at_the_app_path():
     """스타볼은 LG트윈스 앱 전용이라 `/starball` 은 브라우저에서 500 이다.
 
