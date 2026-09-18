@@ -154,39 +154,34 @@
 <script>
 // 스타볼은 LG트윈스 **앱 안의 화면**이다. 브라우저로 여는 주소가 없다.
 //
-// 실측 2026-09-18 — 세 번 틀리고 알아낸 것
-//   /starball      → 500  '오류가 발생하였습니다'
-//   /app/starball  → 302 → /login-check → '로그인이 필요한 서비스 입니다'
-//   intent 에 위 주소를 붙임 → **앱이 깔려 있는데도 플레이스토어로 갔다**
+// 실측 2026-09-18 — 네 번 틀리고 알아낸 것
+//   1. /starball                     → 500 '오류가 발생하였습니다'
+//   2. /app/starball                 → 로그인 확인 페이지 (스타볼 아님)
+//   3. intent:// + 위 주소            → 앱이 있는데 스토어로 갔다
+//      데이터 주소를 붙이면 '이 앱에서 그 주소를 열 화면' 을 찾는데,
+//      LG 앱은 그 경로를 받지 않아 못 찾는다.
+//   4. intent:#Intent;package=...    → 역시 스토어로 갔다
+//      **action 을 안 주면 크롬이 VIEW 로 채운다.** VIEW 는 열 데이터가
+//      있어야 하는데 없으니 실행할 화면을 못 찾는다.
 //
-// 마지막 것이 핵심이다. intent 에 데이터 주소를 붙이면 안드로이드가
-// '그 앱에서 이 주소를 열 수 있는 화면' 을 찾는다. LG 앱은 그 주소를
-// 받도록 만들어져 있지 않아서 못 찾고, browser_fallback_url 로 떨어진다.
-// assetlinks.json 이 handle_all_urls 를 선언해도 그건 사이트 쪽 허락일
-// 뿐, 앱이 실제로 그 경로를 받느냐는 별개다.
+// 그래서 MAIN + LAUNCHER 를 명시한다. 앱의 첫 화면을 여는 표준 조합이고,
+// 깔려 있으면 반드시 해석된다.
 //
-// 그래서 주소를 빼고 **앱만 띄운다.** 패키지명만 주면 앱의 첫 화면이
-// 열린다 — 깔려 있으면 반드시 된다. 스타볼 화면까지 바로 가지는
-// 못하지만, 스토어로 튕기는 것보다 낫다. 앱 안에서 '스타볼 모으기' 를
-// 한 번 더 누르면 된다.
+// **스토어 폴백은 뺐다.** 앱이 있는 사람을 스토어로 보내는 것이 지금까지의
+// 피해였다. 실패하면 아무 일도 없이 이 화면에 남는 편이 낫다 — 그러면
+// 아래 '값 복사' 로 손으로 넣을 수 있다.
 //
 // 패키지명은 LG 가 공개한 것이다:
 //   lgtwins.com/.well-known/assetlinks.json → com.lgsports.lgtwins.mobileapp
-//   플레이스토어에서 'LG트윈스' 로 확인됨
 const LG_PKG = "com.lgsports.lgtwins.mobileapp";
 const LG_STORE_AOS = "https://play.google.com/store/apps/details?id=" + LG_PKG;
 const LG_STORE_IOS = "https://apps.apple.com/kr/app/id1191383137";
 const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
   (navigator.userAgent.includes("Mac") && "ontouchend" in document);
-// 아이폰은 intent: 를 모른다. 앱을 여는 표준 방법이 없어 스토어로 보낸다
-// (설치돼 있으면 스토어가 '열기' 를 보여준다).
 const LG_APP = IS_IOS ? LG_STORE_IOS :
-  "intent:#Intent;package=" + LG_PKG +
-  ";S.browser_fallback_url=" + encodeURIComponent(LG_STORE_AOS) + ";end";
-
-// 폰이 어느 판을 받았는지 화면에서 바로 알 수 있어야 한다. 이게 없어서
-// '고쳤는데 그대로다' 가 캐시 탓인지 수정이 틀린 탓인지 구분하지 못했다.
-const BUILD = "2026-09-18d";
+  "intent:#Intent;action=android.intent.action.MAIN" +
+  ";category=android.intent.category.LAUNCHER;package=" + LG_PKG + ";end";
+const BUILD = "2026-09-18e";
 const view = document.getElementById("view");
 let D = null, H = null, tab = "today";
 
@@ -215,6 +210,38 @@ function render() {
                  : tab === "why" ? viewWhy()
                  : viewLog();
   view.scrollTop = 0;
+  wireCopy();
+}
+
+// 값 복사. 앱으로 넘기는 길이 막혀도 이건 반드시 된다.
+//
+// 브라우저에서 스타볼 화면으로 바로 가는 방법이 **아예 없다**는 걸 네 번
+// 만에 알았다. 그동안 사용자에게는 값을 옮길 수단조차 없었다. 앱이 열리든
+// 안 열리든, 복사는 되어야 한다.
+function wireCopy() {
+  const b = document.getElementById("copyPicks");
+  if (!b || !D) return;
+  const label = b.innerHTML;
+  b.addEventListener("click", async () => {
+    const txt = (D.missions || []).map(m => m.pick).join(" · ");
+    let ok = true;
+    try {
+      await navigator.clipboard.writeText(txt);
+    } catch (err) {
+      // https 가 아니거나 권한이 없을 때. 옛 방식으로 되돌아간다.
+      try {
+        const t = document.createElement("textarea");
+        t.value = txt;
+        t.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+        document.body.appendChild(t);
+        t.focus(); t.select();
+        ok = document.execCommand("copy");
+        document.body.removeChild(t);
+      } catch (e2) { ok = false; }
+    }
+    b.textContent = ok ? "복사했습니다 — " + txt : "복사가 막혔습니다: " + txt;
+    setTimeout(() => { b.innerHTML = label; }, 2000);
+  });
 }
 
 /* ── 오늘 ─────────────────────────────────────────────── */
@@ -348,9 +375,9 @@ function viewToday() {
   </div>
 
   <div class="grow"></div>
-      <a class="btn" href="${LG_APP}" rel="noopener">LG 트윈스 앱 열기
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M9 7h8v8"/></svg></a>
-  <p class="tiny muted" style="text-align:center;margin:8px 0 0">앱이 열리면 <b>스타볼 모으기</b>를 눌러 위 값을 넣으세요</p>`;
+      <button class="btn" id="copyPicks" type="button">값 복사<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+      <a class="btn ghost" href="${LG_APP}" rel="noopener" style="margin-top:8px">LG 트윈스 앱 열기<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M9 7h8v8"/></svg></a>
+  <p class="tiny muted" style="text-align:center;margin:8px 0 0">앱이 열리면 <b>스타볼 모으기</b>에 위 값을 넣으세요.<br>앱이 안 열리면 값을 복사해 직접 여셔도 됩니다.</p>`;
 }
 
 /* ── 근거 ─────────────────────────────────────────────── */

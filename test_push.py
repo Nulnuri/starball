@@ -96,47 +96,55 @@ def test_tag_differs_by_day_and_by_kind():
     assert len(tags) == 4, tags
 
 
-def test_lg_link_launches_the_app_without_a_data_url():
-    """intent 에 주소를 붙이면 앱이 깔려 있어도 스토어로 떨어진다.
+def test_lg_link_uses_main_launcher_and_no_store_fallback():
+    """네 번 틀리고 알아낸 것을 전부 지킨다.
 
-    2026-09-18, 세 번 틀리고 알아냈다.
+        1. /starball                  → 500 오류 화면
+        2. /app/starball              → 로그인 확인 페이지 (스타볼 아님)
+        3. intent:// + 위 주소         → 앱이 있는데 스토어로 갔다
+           데이터 주소를 붙이면 '그 주소를 열 화면' 을 찾는데 LG 앱에는 없다
+        4. intent:#Intent;package=…   → 역시 스토어로 갔다
+           **action 을 안 주면 크롬이 VIEW 로 채운다.** VIEW 는 열 데이터가
+           있어야 하는데 없으니 실행할 화면을 못 찾는다
 
-        1. /starball          → 500 오류 화면
-        2. /app/starball      → 로그인 확인 페이지 (스타볼 아님)
-        3. intent + 위 주소   → **앱이 있는데도 플레이스토어로 갔다**
-
-    3번이 핵심이다. intent 에 데이터 주소를 붙이면 안드로이드가 '그 앱에서
-    이 주소를 열 수 있는 화면' 을 찾는다. LG 앱은 그 경로를 받도록 만들어져
-    있지 않아 못 찾고 browser_fallback_url 로 떨어진다. assetlinks.json 의
-    handle_all_urls 는 사이트 쪽 허락일 뿐, 앱이 실제로 받느냐는 별개다.
-
-    주소를 빼고 패키지명만 주면 앱의 첫 화면이 열린다 — 깔려 있으면 반드시
-    된다. 스타볼까지 바로 가지는 못하지만 스토어로 튕기는 것보다 낫다.
+    그래서 MAIN + LAUNCHER 를 명시한다. 그리고 **스토어 폴백을 뺀다** —
+    앱이 있는 사람을 스토어로 보내는 것이 지금까지의 피해였다. 실패하면
+    아무 일 없이 화면에 남는 편이 낫다. 값 복사가 있으니까.
     """
     html = io.open("web/index.html", encoding="utf-8").read()
     i = html.find("const LG_APP")
     assert i >= 0, "LG_APP 선언을 찾지 못했다"
-    # intent 문자열 안에 세미콜론이 많아 `[^;]+;` 로는 잘린다.
-    # 선언이 끝나는 빈 줄까지 통째로 본다.
     end = html.find(chr(10) + chr(10), i)
     decl = html[i:end if end > 0 else i + 400]
 
-    assert "intent:#Intent" in decl, "앱을 띄우는 intent 가 아니다"
-    assert "com.lgsports.lgtwins.mobileapp" in html, "패키지명이 없다"
-    assert "S.browser_fallback_url" in decl, "앱이 없을 때 갈 곳이 없다"
-    # 데이터 주소를 붙이면 안 된다 — 그게 스토어로 튕긴 원인이다
-    assert "intent://" not in decl,         "intent 에 주소가 붙어 있다 — 앱이 있어도 스토어로 간다"
+    assert "android.intent.action.MAIN" in decl, "action 이 없다 — VIEW 로 채워져 실패한다"
+    assert "android.intent.category.LAUNCHER" in decl, "LAUNCHER 범주가 없다"
+    # 선언은 변수로 이어 붙인다. 리터럴은 LG_PKG 쪽에 있다.
+    assert "LG_PKG" in decl, "패키지를 지정하지 않는다"
+    assert 'const LG_PKG = "com.lgsports.lgtwins.mobileapp"' in html, \
+        "패키지명이 LG 가 공개한 값과 다르다"
+    assert "intent://" not in decl, "intent 에 주소가 붙어 있다 — 스토어로 튕긴다"
+    assert "browser_fallback_url" not in decl,         "스토어 폴백이 있다 — 앱이 있는 사람을 스토어로 보낸다"
 
     for line in html.splitlines():
         t = line.strip()
         if t.startswith("//") or t.startswith("*"):
             continue
-        assert "lgtwins.com/starball" not in line,             f"500 나는 옛 주소가 남아 있다: {t[:70]}"
+        assert "lgtwins.com/starball" not in line, f"옛 주소가 남아 있다: {t[:70]}"
 
-    i = html.index("${LG_APP}")
-    assert 'target="_blank"' not in html[i-120:i+120],         "새 탭으로 연다 — intent 가 앱으로 넘어가지 못한다"
-    # 앱 첫 화면으로 가므로 한 단계 더 눌러야 한다는 안내가 있어야 한다
-    assert "스타볼 모으기" in html, "앱에서 무엇을 눌러야 하는지 안내가 없다"
+
+def test_picks_can_be_copied_even_if_the_app_never_opens():
+    """앱으로 넘기는 길이 막혀도 값은 옮길 수 있어야 한다.
+
+    브라우저에서 스타볼 화면으로 바로 가는 방법이 아예 없다는 걸 네 번
+    만에 알았다. 그동안 사용자에게는 값을 옮길 수단조차 없었다.
+    """
+    html = io.open("web/index.html", encoding="utf-8").read()
+    assert 'id="copyPicks"' in html, "값 복사 버튼이 없다"
+    assert "function wireCopy" in html, "복사 동작이 없다"
+    assert "wireCopy();" in html, "화면을 그린 뒤 복사 동작을 걸지 않는다"
+    assert "navigator.clipboard" in html, "클립보드를 쓰지 않는다"
+    assert "execCommand" in html, "클립보드가 막혔을 때의 대비가 없다"
 
 
 def test_build_stamp_is_visible_on_screen():
