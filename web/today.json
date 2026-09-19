@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-18T11:34:27+09:00",
+ "generated": "2026-09-19T10:04:39+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -10,12 +10,12 @@
   }
  },
  "game": {
-  "date": "2026-09-18",
-  "time": "18:30",
-  "stadium": "수원",
+  "date": "2026-09-19",
+  "time": "17:00",
+  "stadium": "잠실",
   "lg": "LG",
-  "opp": "KT",
-  "lgIsHome": false
+  "opp": "한화",
+  "lgIsHome": true
  },
  "missions": [
   {
@@ -28,29 +28,23 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.5088,
+   "prob": 0.5426,
    "options": [
     {
      "label": "승",
-     "prob": 0.5088
+     "prob": 0.5426
     },
     {
      "label": "무",
-     "prob": 0.0171
+     "prob": 0.02
     },
     {
      "label": "패",
-     "prob": 0.4741
+     "prob": 0.4375
     }
    ],
    "model": "learned",
    "reasons": [
-    {
-     "key": "op_win",
-     "label": "상대 시즌 승률",
-     "value": "0.598",
-     "weight": -0.1431
-    },
     {
      "key": "my_win",
      "label": "LG 시즌 승률",
@@ -58,22 +52,28 @@
      "weight": 0.0989
     },
     {
-     "key": "op_sp_era",
-     "label": "상대 선발 ERA",
-     "value": "3.15",
-     "weight": -0.0955
+     "key": "op_win",
+     "label": "상대 시즌 승률",
+     "value": "0.432",
+     "weight": 0.0785
     },
     {
-     "key": "op_form10",
-     "label": "상대 최근 10경기",
-     "value": "0.700",
-     "weight": -0.0666
+     "key": "op_sp_era",
+     "label": "상대 선발 ERA",
+     "value": "3.47",
+     "weight": -0.0658
+    },
+    {
+     "key": "home",
+     "label": "홈/원정",
+     "value": "홈",
+     "weight": 0.0561
     }
    ],
    "blend": {
     "model": 0.3,
     "teamWin": 0.564,
-    "modelPick": "패",
+    "modelPick": "승",
     "priorPick": "승"
    },
    "confidence": "낮음",
@@ -144,31 +144,31 @@
     "base": 33.6,
     "gain": 0.9
    },
-   "prob": 0.4789,
+   "prob": 0.5173,
    "options": [
     {
      "label": "0개",
-     "prob": 0.4789
+     "prob": 0.5173
     },
     {
      "label": "1개",
-     "prob": 0.3279
+     "prob": 0.3154
     },
     {
      "label": "2개",
-     "prob": 0.1424
+     "prob": 0.1274
     },
     {
      "label": "3개",
-     "prob": 0.0408
+     "prob": 0.0328
     },
     {
      "label": "4개",
-     "prob": 0.0068
+     "prob": 0.0048
     },
     {
      "label": "5개 이상",
-     "prob": 0.0032
+     "prob": 0.0023
     }
    ],
    "model": "learned",
@@ -176,20 +176,20 @@
     {
      "key": "park",
      "label": "구장",
-     "value": "0.85",
-     "weight": 0.1663
+     "value": "0.74",
+     "weight": 0.2824
     }
    ]
   }
  ],
  "joint": {
-  "prob": 0.054,
+  "prob": 0.0627,
   "baseline": 0.0555,
   "confidence": "낮음"
  },
  "score": {
-  "lg": 4.3,
-  "opp": 5.5,
+  "lg": 5.4,
+  "opp": 6.0,
   "modal": [
    3,
    4
@@ -198,70 +198,71 @@
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "톨허스트",
+    "name": "임찬규",
     "era": 4.19,
-    "whip": 1.24,
-    "ip": 139.7,
-    "games": 25,
+    "whip": 1.36,
+    "ip": 146.0,
+    "games": 26,
     "spot": false,
     "vs": {
-     "foe": "KT",
-     "era": 2.77,
-     "ip": 13.0,
-     "games": 2
+     "foe": "한화",
+     "era": 15.75,
+     "ip": 4.0,
+     "games": 1
     },
     "recent": {
-     "era": 2.97,
-     "whip": 1.02,
+     "era": 3.86,
+     "whip": 1.12,
      "ip": 30.3,
      "starts": 5,
      "asStarter": 5
     }
    },
    "opp": {
-    "name": "로건",
-    "era": 2.97,
-    "whip": 1.36,
-    "ip": 72.7,
-    "games": 13,
+    "name": "화이트",
+    "era": 3.47,
+    "whip": 1.24,
+    "ip": 119.3,
+    "games": 21,
     "spot": false,
     "vs": {
      "foe": "LG",
-     "era": 1.8,
-     "ip": 5.0,
+     "era": 0.0,
+     "ip": 7.0,
      "games": 1
     },
     "recent": {
-     "era": 2.48,
-     "whip": 1.38,
-     "ip": 29.0,
+     "era": 4.5,
+     "whip": 1.32,
+     "ip": 28.0,
      "starts": 5,
      "asStarter": 5
     }
    }
   },
   "park": {
-   "name": "수원",
-   "raw": 0.8496,
-   "applied": 0.925
+   "name": "잠실",
+   "raw": 0.7441,
+   "applied": 0.872
   },
   "bullpen": {
    "lg": 5.541,
-   "opp": 5.063
+   "opp": 6.189
   },
   "form": {
-   "lg": "승승승승패",
-   "opp": "무승승승승"
+   "lg": "승승승승승",
+   "opp": "패무패패패"
   },
   "h2h": {
-   "w": 5,
-   "l": 10,
+   "w": 6,
+   "l": 8,
    "d": 0,
-   "games": 15
+   "games": 14
   }
  },
  "warnings": [
-  "로건의 LG전 표본은 5.0이닝(1경기)뿐 — 상대 ERA를 크게 축소 적용"
+  "임찬규의 한화전 표본은 4.0이닝(1경기)뿐 — 상대 ERA를 크게 축소 적용",
+  "화이트의 LG전 표본은 7.0이닝(1경기)뿐 — 상대 ERA를 크게 축소 적용"
  ],
  "starballs": 3,
  "goal": 7
