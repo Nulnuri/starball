@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-20T10:04:39+09:00",
+ "generated": "2026-09-24T10:05:10+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -10,11 +10,11 @@
   }
  },
  "game": {
-  "date": "2026-09-20",
-  "time": "14:00",
+  "date": "2026-09-24",
+  "time": "17:00",
   "stadium": "잠실",
   "lg": "LG",
-  "opp": "한화",
+  "opp": "롯데",
   "lgIsHome": true
  },
  "missions": [
@@ -28,56 +28,56 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.5868,
+   "prob": 0.552,
    "options": [
     {
      "label": "승",
-     "prob": 0.5868
+     "prob": 0.552
     },
     {
      "label": "무",
-     "prob": 0.0187
+     "prob": 0.0183
     },
     {
      "label": "패",
-     "prob": 0.3945
+     "prob": 0.4297
     }
    ],
    "model": "learned",
    "reasons": [
     {
-     "key": "op_sp_era",
-     "label": "상대 선발 ERA",
-     "value": "8.12",
-     "weight": 0.3676
-    },
-    {
      "key": "my_win",
      "label": "LG 시즌 승률",
-     "value": "0.567",
-     "weight": 0.1032
+     "value": "0.574",
+     "weight": 0.1117
     },
     {
      "key": "op_win",
      "label": "상대 시즌 승률",
-     "value": "0.428",
-     "weight": 0.0828
+     "value": "0.439",
+     "weight": 0.0681
     },
     {
-     "key": "my_sp_era",
-     "label": "LG 선발 ERA",
-     "value": "3.35",
-     "weight": 0.077
+     "key": "my_form10",
+     "label": "LG 최근 10경기",
+     "value": "0.700",
+     "weight": 0.0667
+    },
+    {
+     "key": "home",
+     "label": "홈/원정",
+     "value": "홈",
+     "weight": 0.0561
     }
    ],
    "blend": {
     "model": 0.3,
-    "teamWin": 0.567,
+    "teamWin": 0.574,
     "modelPick": "승",
     "priorPick": "승"
    },
-   "confidence": "보통",
-   "tierAccuracy": 62.6
+   "confidence": "낮음",
+   "tierAccuracy": 57.0
   },
   {
    "n": 2,
@@ -144,27 +144,27 @@
     "base": 33.6,
     "gain": 0.9
    },
-   "prob": 0.5152,
+   "prob": 0.5172,
    "options": [
     {
      "label": "0개",
-     "prob": 0.5152
+     "prob": 0.5172
     },
     {
      "label": "1개",
-     "prob": 0.3162
+     "prob": 0.3155
     },
     {
      "label": "2개",
-     "prob": 0.1282
+     "prob": 0.1274
     },
     {
      "label": "3개",
-     "prob": 0.0333
+     "prob": 0.0329
     },
     {
      "label": "4개",
-     "prob": 0.0049
+     "prob": 0.0048
     },
     {
      "label": "5개 이상",
@@ -176,95 +176,91 @@
     {
      "key": "park",
      "label": "구장",
-     "value": "0.75",
-     "weight": 0.2758
+     "value": "0.74",
+     "weight": 0.2819
     }
    ]
   }
  ],
  "joint": {
-  "prob": 0.0679,
+  "prob": 0.0638,
   "baseline": 0.0555,
   "confidence": "보통"
  },
  "score": {
-  "lg": 6.5,
-  "opp": 5.3,
+  "lg": 5.5,
+  "opp": 4.9,
   "modal": [
    4,
-   4
+   3
   ]
  },
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "카라스코",
-    "era": 3.35,
-    "whip": 0.96,
-    "ip": 45.7,
-    "games": 8,
+    "name": "톨허스트",
+    "era": 4.08,
+    "whip": 1.22,
+    "ip": 145.7,
+    "games": 26,
     "spot": false,
     "vs": {
-     "foe": "한화",
-     "era": 4.66,
-     "ip": 9.7,
+     "foe": "롯데",
+     "era": 6.0,
+     "ip": 12.0,
      "games": 2
     },
     "recent": {
-     "era": 3.29,
-     "whip": 1.1,
-     "ip": 27.3,
+     "era": 1.48,
+     "whip": 0.79,
+     "ip": 30.3,
      "starts": 5,
      "asStarter": 5
     }
    },
    "opp": {
-    "name": "황준서",
-    "era": 5.48,
-    "whip": 1.7,
-    "ip": 47.7,
-    "games": 26,
-    "spot": true,
+    "name": "로드리게스",
+    "era": 4.28,
+    "whip": 1.35,
+    "ip": 151.3,
+    "games": 27,
+    "spot": false,
     "vs": {
      "foe": "LG",
-     "era": 2.45,
-     "ip": 7.3,
-     "games": 3
+     "era": 3.27,
+     "ip": 11.0,
+     "games": 2
     },
     "recent": {
-     "era": 7.88,
-     "whip": 1.88,
-     "ip": 16.0,
+     "era": 6.59,
+     "whip": 1.46,
+     "ip": 27.3,
      "starts": 5,
-     "asStarter": 3
+     "asStarter": 5
     }
    }
   },
   "park": {
    "name": "잠실",
-   "raw": 0.7501,
-   "applied": 0.875
+   "raw": 0.7446,
+   "applied": 0.872
   },
   "bullpen": {
    "lg": 5.541,
-   "opp": 6.189
+   "opp": 5.786
   },
   "form": {
    "lg": "승승승승승",
-   "opp": "패패무패패"
+   "opp": "승승승승승"
   },
   "h2h": {
-   "w": 7,
-   "l": 8,
+   "w": 8,
+   "l": 5,
    "d": 0,
-   "games": 15
+   "games": 13
   }
  },
- "warnings": [
-  "카라스코의 한화전 표본은 9.7이닝(2경기)뿐 — 상대 ERA를 크게 축소 적용",
-  "한화 선발 황준서은 등판당 1.8이닝(26경기)로 불펜/임시 선발 패턴 — 소화 이닝 불확실",
-  "황준서의 LG전 표본은 7.3이닝(3경기)뿐 — 상대 ERA를 크게 축소 적용"
- ],
+ "warnings": [],
  "starballs": 3,
  "goal": 7
 }
