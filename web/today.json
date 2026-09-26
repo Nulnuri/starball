@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-24T10:05:10+09:00",
+ "generated": "2026-09-26T10:04:11+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -10,12 +10,12 @@
   }
  },
  "game": {
-  "date": "2026-09-24",
+  "date": "2026-09-26",
   "time": "17:00",
-  "stadium": "잠실",
+  "stadium": "광주",
   "lg": "LG",
-  "opp": "롯데",
-  "lgIsHome": true
+  "opp": "KIA",
+  "lgIsHome": false
  },
  "missions": [
   {
@@ -28,11 +28,11 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.552,
+   "prob": 0.5233,
    "options": [
     {
      "label": "승",
-     "prob": 0.552
+     "prob": 0.5233
     },
     {
      "label": "무",
@@ -40,7 +40,7 @@
     },
     {
      "label": "패",
-     "prob": 0.4297
+     "prob": 0.4584
     }
    ],
    "model": "learned",
@@ -48,14 +48,8 @@
     {
      "key": "my_win",
      "label": "LG 시즌 승률",
-     "value": "0.574",
-     "weight": 0.1117
-    },
-    {
-     "key": "op_win",
-     "label": "상대 시즌 승률",
-     "value": "0.439",
-     "weight": 0.0681
+     "value": "0.569",
+     "weight": 0.1062
     },
     {
      "key": "my_form10",
@@ -64,16 +58,22 @@
      "weight": 0.0667
     },
     {
-     "key": "home",
-     "label": "홈/원정",
-     "value": "홈",
-     "weight": 0.0561
+     "key": "op_sp_era",
+     "label": "상대 선발 ERA",
+     "value": "3.50",
+     "weight": -0.0632
+    },
+    {
+     "key": "op_win",
+     "label": "상대 시즌 승률",
+     "value": "0.538",
+     "weight": -0.0631
     }
    ],
    "blend": {
     "model": 0.3,
-    "teamWin": 0.574,
-    "modelPick": "승",
+    "teamWin": 0.569,
+    "modelPick": "패",
     "priorPick": "승"
    },
    "confidence": "낮음",
@@ -144,31 +144,31 @@
     "base": 33.6,
     "gain": 0.9
    },
-   "prob": 0.5172,
+   "prob": 0.3688,
    "options": [
     {
      "label": "0개",
-     "prob": 0.5172
+     "prob": 0.3688
     },
     {
      "label": "1개",
-     "prob": 0.3155
+     "prob": 0.3491
     },
     {
      "label": "2개",
-     "prob": 0.1274
+     "prob": 0.1859
     },
     {
      "label": "3개",
-     "prob": 0.0329
+     "prob": 0.0711
     },
     {
      "label": "4개",
-     "prob": 0.0048
+     "prob": 0.0172
     },
     {
      "label": "5개 이상",
-     "prob": 0.0023
+     "prob": 0.0079
     }
    ],
    "model": "learned",
@@ -176,91 +176,93 @@
     {
      "key": "park",
      "label": "구장",
-     "value": "0.74",
-     "weight": 0.2819
+     "value": "1.14",
+     "weight": -0.1576
     }
    ]
   }
  ],
  "joint": {
-  "prob": 0.0638,
+  "prob": 0.0425,
   "baseline": 0.0555,
-  "confidence": "보통"
+  "confidence": "낮음"
  },
  "score": {
-  "lg": 5.5,
+  "lg": 4.7,
   "opp": 4.9,
   "modal": [
-   4,
-   3
+   3,
+   4
   ]
  },
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "톨허스트",
-    "era": 4.08,
-    "whip": 1.22,
-    "ip": 145.7,
-    "games": 26,
+    "name": "임찬규",
+    "era": 4.06,
+    "whip": 1.33,
+    "ip": 153.0,
+    "games": 27,
     "spot": false,
     "vs": {
-     "foe": "롯데",
-     "era": 6.0,
-     "ip": 12.0,
-     "games": 2
+     "foe": "KIA",
+     "era": 0.0,
+     "ip": 0.0,
+     "games": 0
     },
     "recent": {
-     "era": 1.48,
-     "whip": 0.79,
-     "ip": 30.3,
+     "era": 3.73,
+     "whip": 1.12,
+     "ip": 31.3,
      "starts": 5,
      "asStarter": 5
     }
    },
    "opp": {
-    "name": "로드리게스",
-    "era": 4.28,
-    "whip": 1.35,
-    "ip": 151.3,
-    "games": 27,
+    "name": "네일",
+    "era": 3.57,
+    "whip": 1.18,
+    "ip": 163.7,
+    "games": 28,
     "spot": false,
     "vs": {
      "foe": "LG",
-     "era": 3.27,
-     "ip": 11.0,
-     "games": 2
+     "era": 8.44,
+     "ip": 5.3,
+     "games": 1
     },
     "recent": {
-     "era": 6.59,
-     "whip": 1.46,
-     "ip": 27.3,
+     "era": 2.79,
+     "whip": 1.24,
+     "ip": 29.0,
      "starts": 5,
      "asStarter": 5
     }
    }
   },
   "park": {
-   "name": "잠실",
-   "raw": 0.7446,
-   "applied": 0.872
+   "name": "광주",
+   "raw": 1.144,
+   "applied": 1.072
   },
   "bullpen": {
    "lg": 5.541,
-   "opp": 5.786
+   "opp": 5.247
   },
   "form": {
-   "lg": "승승승승승",
-   "opp": "승승승승승"
+   "lg": "패승승승승",
+   "opp": "패승승승패"
   },
   "h2h": {
-   "w": 8,
-   "l": 5,
+   "w": 7,
+   "l": 4,
    "d": 0,
-   "games": 13
+   "games": 11
   }
  },
- "warnings": [],
+ "warnings": [
+  "네일의 LG전 표본은 5.3이닝(1경기)뿐 — 상대 ERA를 크게 축소 적용"
+ ],
  "starballs": 3,
  "goal": 7
 }
