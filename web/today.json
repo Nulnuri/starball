@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-26T10:04:11+09:00",
+ "generated": "2026-09-27T10:05:11+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -10,7 +10,7 @@
   }
  },
  "game": {
-  "date": "2026-09-26",
+  "date": "2026-09-27",
   "time": "17:00",
   "stadium": "광주",
   "lg": "LG",
@@ -28,19 +28,19 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.5233,
+   "prob": 0.5357,
    "options": [
     {
      "label": "승",
-     "prob": 0.5233
+     "prob": 0.5357
     },
     {
      "label": "무",
-     "prob": 0.0183
+     "prob": 0.0178
     },
     {
      "label": "패",
-     "prob": 0.4584
+     "prob": 0.4465
     }
    ],
    "model": "learned",
@@ -58,22 +58,22 @@
      "weight": 0.0667
     },
     {
-     "key": "op_sp_era",
-     "label": "상대 선발 ERA",
-     "value": "3.50",
-     "weight": -0.0632
-    },
-    {
      "key": "op_win",
      "label": "상대 시즌 승률",
      "value": "0.538",
      "weight": -0.0631
+    },
+    {
+     "key": "my_sp_era",
+     "label": "LG 선발 ERA",
+     "value": "3.55",
+     "weight": 0.0581
     }
    ],
    "blend": {
     "model": 0.3,
     "teamWin": 0.569,
-    "modelPick": "패",
+    "modelPick": "승",
     "priorPick": "승"
    },
    "confidence": "낮음",
@@ -183,26 +183,26 @@
   }
  ],
  "joint": {
-  "prob": 0.0425,
+  "prob": 0.0435,
   "baseline": 0.0555,
   "confidence": "낮음"
  },
  "score": {
-  "lg": 4.7,
-  "opp": 4.9,
+  "lg": 5.0,
+  "opp": 4.8,
   "modal": [
    3,
-   4
+   3
   ]
  },
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "임찬규",
-    "era": 4.06,
-    "whip": 1.33,
-    "ip": 153.0,
-    "games": 27,
+    "name": "카라스코",
+    "era": 3.55,
+    "whip": 0.97,
+    "ip": 50.7,
+    "games": 9,
     "spot": false,
     "vs": {
      "foe": "KIA",
@@ -211,30 +211,30 @@
      "games": 0
     },
     "recent": {
-     "era": 3.73,
-     "whip": 1.12,
-     "ip": 31.3,
+     "era": 3.76,
+     "whip": 1.14,
+     "ip": 26.3,
      "starts": 5,
      "asStarter": 5
     }
    },
    "opp": {
-    "name": "네일",
-    "era": 3.57,
-    "whip": 1.18,
-    "ip": 163.7,
-    "games": 28,
+    "name": "시라카와",
+    "era": 4.5,
+    "whip": 1.37,
+    "ip": 76.0,
+    "games": 16,
     "spot": false,
     "vs": {
      "foe": "LG",
-     "era": 8.44,
-     "ip": 5.3,
+     "era": 7.5,
+     "ip": 6.0,
      "games": 1
     },
     "recent": {
-     "era": 2.79,
-     "whip": 1.24,
-     "ip": 29.0,
+     "era": 4.62,
+     "whip": 1.18,
+     "ip": 25.3,
      "starts": 5,
      "asStarter": 5
     }
@@ -250,18 +250,18 @@
    "opp": 5.247
   },
   "form": {
-   "lg": "패승승승승",
-   "opp": "패승승승패"
+   "lg": "패패승승승",
+   "opp": "승패승승승"
   },
   "h2h": {
    "w": 7,
-   "l": 4,
+   "l": 5,
    "d": 0,
-   "games": 11
+   "games": 12
   }
  },
  "warnings": [
-  "네일의 LG전 표본은 5.3이닝(1경기)뿐 — 상대 ERA를 크게 축소 적용"
+  "시라카와의 LG전 표본은 6.0이닝(1경기)뿐 — 상대 ERA를 크게 축소 적용"
  ],
  "starballs": 3,
  "goal": 7
