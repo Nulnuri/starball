@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-29T10:06:56+09:00",
+ "generated": "2026-09-30T10:07:40+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -10,7 +10,7 @@
   }
  },
  "game": {
-  "date": "2026-09-29",
+  "date": "2026-09-30",
   "time": "18:30",
   "stadium": "문학",
   "lg": "LG",
@@ -28,19 +28,19 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.5156,
+   "prob": 0.5474,
    "options": [
     {
      "label": "승",
-     "prob": 0.5156
+     "prob": 0.5474
     },
     {
      "label": "무",
-     "prob": 0.0202
+     "prob": 0.0188
     },
     {
      "label": "패",
-     "prob": 0.4642
+     "prob": 0.4339
     }
    ],
    "model": "learned",
@@ -48,8 +48,8 @@
     {
      "key": "op_sp_era",
      "label": "상대 선발 ERA",
-     "value": "1.62",
-     "weight": -0.238
+     "value": "5.92",
+     "weight": 0.1629
     },
     {
      "key": "my_win",
@@ -73,7 +73,7 @@
    "blend": {
     "model": 0.3,
     "teamWin": 0.565,
-    "modelPick": "패",
+    "modelPick": "승",
     "priorPick": "승"
    },
    "confidence": "낮음",
@@ -183,58 +183,58 @@
   }
  ],
  "joint": {
-  "prob": 0.0457,
+  "prob": 0.0485,
   "baseline": 0.0555,
-  "confidence": "낮음"
+  "confidence": "보통"
  },
  "score": {
-  "lg": 3.6,
-  "opp": 4.6,
+  "lg": 5.9,
+  "opp": 5.2,
   "modal": [
-   2,
+   3,
    3
   ]
  },
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "톨허스트",
-    "era": 4.25,
-    "whip": 1.26,
-    "ip": 150.3,
+    "name": "박시원",
+    "era": 4.41,
+    "whip": 1.55,
+    "ip": 49.0,
     "games": 27,
-    "spot": false,
+    "spot": true,
     "vs": {
      "foe": "SSG",
-     "era": 0.0,
-     "ip": 6.0,
-     "games": 1
+     "era": 4.09,
+     "ip": 11.0,
+     "games": 4
     },
     "recent": {
-     "era": 3.21,
-     "whip": 1.18,
-     "ip": 28.0,
+     "era": 5.19,
+     "whip": 1.62,
+     "ip": 17.3,
      "starts": 5,
      "asStarter": 5
     }
    },
    "opp": {
-    "name": "아빌라",
-    "era": 1.62,
-    "whip": 1.02,
-    "ip": 77.7,
-    "games": 12,
+    "name": "김건우",
+    "era": 6.13,
+    "whip": 1.74,
+    "ip": 123.3,
+    "games": 26,
     "spot": false,
     "vs": {
      "foe": "LG",
-     "era": 0.0,
-     "ip": 7.0,
-     "games": 1
+     "era": 7.52,
+     "ip": 20.3,
+     "games": 4
     },
     "recent": {
-     "era": 1.26,
-     "whip": 0.79,
-     "ip": 35.7,
+     "era": 5.76,
+     "whip": 1.52,
+     "ip": 25.0,
      "starts": 5,
      "asStarter": 5
     }
@@ -250,19 +250,18 @@
    "opp": 5.906
   },
   "form": {
-   "lg": "패패승승승",
-   "opp": "패패승승승"
+   "lg": "패패패승승",
+   "opp": "승패패승승"
   },
   "h2h": {
    "w": 9,
-   "l": 4,
+   "l": 5,
    "d": 0,
-   "games": 13
+   "games": 14
   }
  },
  "warnings": [
-  "아빌라의 LG전 표본은 7.0이닝(1경기)뿐 — 상대 ERA를 크게 축소 적용",
-  "톨허스트의 SSG전 표본은 6.0이닝(1경기)뿐 — 상대 ERA를 크게 축소 적용"
+  "LG 선발 박시원은 등판당 1.8이닝(27경기)로 불펜/임시 선발 패턴 — 소화 이닝 불확실"
  ],
  "starballs": 3,
  "goal": 7
