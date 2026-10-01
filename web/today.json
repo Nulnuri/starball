@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-30T10:07:40+09:00",
+ "generated": "2026-10-01T10:08:25+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -10,7 +10,7 @@
   }
  },
  "game": {
-  "date": "2026-09-30",
+  "date": "2026-10-01",
   "time": "18:30",
   "stadium": "문학",
   "lg": "LG",
@@ -28,51 +28,51 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.5474,
+   "prob": 0.529,
    "options": [
     {
      "label": "승",
-     "prob": 0.5474
+     "prob": 0.529
     },
     {
      "label": "무",
-     "prob": 0.0188
+     "prob": 0.0203
     },
     {
      "label": "패",
-     "prob": 0.4339
+     "prob": 0.4507
     }
    ],
    "model": "learned",
    "reasons": [
     {
-     "key": "op_sp_era",
-     "label": "상대 선발 ERA",
-     "value": "5.92",
-     "weight": 0.1629
-    },
-    {
      "key": "my_win",
      "label": "LG 시즌 승률",
-     "value": "0.565",
-     "weight": 0.1006
+     "value": "0.561",
+     "weight": 0.0952
     },
     {
      "key": "op_win",
      "label": "상대 시즌 승률",
-     "value": "0.436",
-     "weight": 0.0721
+     "value": "0.440",
+     "weight": 0.0668
     },
     {
      "key": "my_form10",
      "label": "LG 최근 10경기",
      "value": "0.700",
      "weight": 0.0667
+    },
+    {
+     "key": "op_form10",
+     "label": "상대 최근 10경기",
+     "value": "0.700",
+     "weight": -0.0666
     }
    ],
    "blend": {
     "model": 0.3,
-    "teamWin": 0.565,
+    "teamWin": 0.561,
     "modelPick": "승",
     "priorPick": "승"
    },
@@ -148,7 +148,7 @@
    "options": [
     {
      "label": "0개",
-     "prob": 0.3354
+     "prob": 0.335
     },
     {
      "label": "1개",
@@ -156,15 +156,15 @@
     },
     {
      "label": "2개",
-     "prob": 0.1984
+     "prob": 0.1986
     },
     {
      "label": "3개",
-     "prob": 0.083
+     "prob": 0.0831
     },
     {
      "label": "4개",
-     "prob": 0.0224
+     "prob": 0.0225
     },
     {
      "label": "5개 이상",
@@ -177,19 +177,19 @@
      "key": "park",
      "label": "구장",
      "value": "1.23",
-     "weight": 0.2561
+     "weight": 0.2573
     }
    ]
   }
  ],
  "joint": {
-  "prob": 0.0485,
+  "prob": 0.0469,
   "baseline": 0.0555,
-  "confidence": "보통"
+  "confidence": "낮음"
  },
  "score": {
-  "lg": 5.9,
-  "opp": 5.2,
+  "lg": 4.8,
+  "opp": 4.9,
   "modal": [
    3,
    3
@@ -198,43 +198,43 @@
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "박시원",
-    "era": 4.41,
-    "whip": 1.55,
-    "ip": 49.0,
-    "games": 27,
-    "spot": true,
+    "name": "임찬규",
+    "era": 4.15,
+    "whip": 1.33,
+    "ip": 158.3,
+    "games": 28,
+    "spot": false,
     "vs": {
      "foe": "SSG",
-     "era": 4.09,
-     "ip": 11.0,
-     "games": 4
+     "era": 3.38,
+     "ip": 16.0,
+     "games": 3
     },
     "recent": {
-     "era": 5.19,
-     "whip": 1.62,
-     "ip": 17.3,
+     "era": 4.99,
+     "whip": 1.24,
+     "ip": 30.7,
      "starts": 5,
      "asStarter": 5
     }
    },
    "opp": {
-    "name": "김건우",
-    "era": 6.13,
-    "whip": 1.74,
-    "ip": 123.3,
-    "games": 26,
+    "name": "김민준",
+    "era": 3.65,
+    "whip": 1.23,
+    "ip": 79.0,
+    "games": 15,
     "spot": false,
     "vs": {
      "foe": "LG",
-     "era": 7.52,
-     "ip": 20.3,
-     "games": 4
+     "era": 6.52,
+     "ip": 9.7,
+     "games": 2
     },
     "recent": {
-     "era": 5.76,
-     "whip": 1.52,
-     "ip": 25.0,
+     "era": 3.38,
+     "whip": 1.26,
+     "ip": 29.3,
      "starts": 5,
      "asStarter": 5
     }
@@ -242,7 +242,7 @@
   },
   "park": {
    "name": "문학",
-   "raw": 1.2335,
+   "raw": 1.2346,
    "applied": 1.117
   },
   "bullpen": {
@@ -250,18 +250,18 @@
    "opp": 5.906
   },
   "form": {
-   "lg": "패패패승승",
-   "opp": "승패패승승"
+   "lg": "패패패패승",
+   "opp": "승승패패승"
   },
   "h2h": {
    "w": 9,
-   "l": 5,
+   "l": 6,
    "d": 0,
-   "games": 14
+   "games": 15
   }
  },
  "warnings": [
-  "LG 선발 박시원은 등판당 1.8이닝(27경기)로 불펜/임시 선발 패턴 — 소화 이닝 불확실"
+  "김민준의 LG전 표본은 9.7이닝(2경기)뿐 — 상대 ERA를 크게 축소 적용"
  ],
  "starballs": 3,
  "goal": 7
