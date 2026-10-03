@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-01T10:08:25+09:00",
+ "generated": "2026-10-03T14:55:35+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -10,12 +10,12 @@
   }
  },
  "game": {
-  "date": "2026-10-01",
-  "time": "18:30",
-  "stadium": "문학",
+  "date": "2026-10-03",
+  "time": "14:00",
+  "stadium": "잠실",
   "lg": "LG",
-  "opp": "SSG",
-  "lgIsHome": false
+  "opp": "KIA",
+  "lgIsHome": true
  },
  "missions": [
   {
@@ -28,19 +28,19 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.529,
+   "prob": 0.5301,
    "options": [
     {
      "label": "승",
-     "prob": 0.529
+     "prob": 0.5301
     },
     {
      "label": "무",
-     "prob": 0.0203
+     "prob": 0.0173
     },
     {
      "label": "패",
-     "prob": 0.4507
+     "prob": 0.4526
     }
    ],
    "model": "learned",
@@ -48,31 +48,31 @@
     {
      "key": "my_win",
      "label": "LG 시즌 승률",
-     "value": "0.561",
-     "weight": 0.0952
+     "value": "0.553",
+     "weight": 0.0846
     },
     {
-     "key": "op_win",
-     "label": "상대 시즌 승률",
-     "value": "0.440",
-     "weight": 0.0668
+     "key": "op_sp_era",
+     "label": "상대 선발 ERA",
+     "value": "3.38",
+     "weight": -0.0741
     },
     {
-     "key": "my_form10",
-     "label": "LG 최근 10경기",
-     "value": "0.700",
-     "weight": 0.0667
+     "key": "my_sp_era",
+     "label": "LG 선발 ERA",
+     "value": "3.55",
+     "weight": 0.0581
     },
     {
-     "key": "op_form10",
-     "label": "상대 최근 10경기",
-     "value": "0.700",
-     "weight": -0.0666
+     "key": "home",
+     "label": "홈/원정",
+     "value": "홈",
+     "weight": 0.0561
     }
    ],
    "blend": {
     "model": 0.3,
-    "teamWin": 0.561,
+    "teamWin": 0.553,
     "modelPick": "승",
     "priorPick": "승"
    },
@@ -138,37 +138,37 @@
    "n": 3,
    "key": "lg_hr",
    "label": "홈런 수 맞히기",
-   "pick": "1개",
+   "pick": "0개",
    "skill": {
     "hit": 34.5,
     "base": 33.6,
     "gain": 0.9
    },
-   "prob": 0.3504,
+   "prob": 0.5207,
    "options": [
     {
      "label": "0개",
-     "prob": 0.335
+     "prob": 0.5207
     },
     {
      "label": "1개",
-     "prob": 0.3504
+     "prob": 0.3142
     },
     {
      "label": "2개",
-     "prob": 0.1986
+     "prob": 0.1261
     },
     {
      "label": "3개",
-     "prob": 0.0831
+     "prob": 0.0322
     },
     {
      "label": "4개",
-     "prob": 0.0225
+     "prob": 0.0046
     },
     {
      "label": "5개 이상",
-     "prob": 0.0103
+     "prob": 0.0022
     }
    ],
    "model": "learned",
@@ -176,20 +176,20 @@
     {
      "key": "park",
      "label": "구장",
-     "value": "1.23",
-     "weight": 0.2573
+     "value": "0.73",
+     "weight": 0.2927
     }
    ]
   }
  ],
  "joint": {
-  "prob": 0.0469,
+  "prob": 0.0615,
   "baseline": 0.0555,
   "confidence": "낮음"
  },
  "score": {
-  "lg": 4.8,
-  "opp": 4.9,
+  "lg": 4.2,
+  "opp": 4.6,
   "modal": [
    3,
    3
@@ -198,71 +198,69 @@
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "임찬규",
-    "era": 4.15,
-    "whip": 1.33,
-    "ip": 158.3,
-    "games": 28,
+    "name": "카라스코",
+    "era": 3.55,
+    "whip": 0.97,
+    "ip": 50.7,
+    "games": 9,
     "spot": false,
     "vs": {
-     "foe": "SSG",
-     "era": 3.38,
-     "ip": 16.0,
-     "games": 3
+     "foe": "KIA",
+     "era": 0.0,
+     "ip": 0.0,
+     "games": 0
     },
     "recent": {
-     "era": 4.99,
-     "whip": 1.24,
-     "ip": 30.7,
+     "era": 3.76,
+     "whip": 1.14,
+     "ip": 26.3,
      "starts": 5,
      "asStarter": 5
     }
    },
    "opp": {
-    "name": "김민준",
-    "era": 3.65,
-    "whip": 1.23,
-    "ip": 79.0,
-    "games": 15,
+    "name": "네일",
+    "era": 3.45,
+    "whip": 1.17,
+    "ip": 169.7,
+    "games": 29,
     "spot": false,
     "vs": {
      "foe": "LG",
-     "era": 6.52,
-     "ip": 9.7,
+     "era": 3.97,
+     "ip": 11.3,
      "games": 2
     },
     "recent": {
-     "era": 3.38,
-     "whip": 1.26,
-     "ip": 29.3,
+     "era": 2.17,
+     "whip": 1.17,
+     "ip": 29.0,
      "starts": 5,
      "asStarter": 5
     }
    }
   },
   "park": {
-   "name": "문학",
-   "raw": 1.2346,
-   "applied": 1.117
+   "name": "잠실",
+   "raw": 0.7348,
+   "applied": 0.867
   },
   "bullpen": {
    "lg": 5.541,
-   "opp": 5.906
+   "opp": 5.247
   },
   "form": {
-   "lg": "패패패패승",
-   "opp": "승승패패승"
+   "lg": "패패패패패",
+   "opp": "패패패승패"
   },
   "h2h": {
-   "w": 9,
-   "l": 6,
+   "w": 7,
+   "l": 5,
    "d": 0,
-   "games": 15
+   "games": 12
   }
  },
- "warnings": [
-  "김민준의 LG전 표본은 9.7이닝(2경기)뿐 — 상대 ERA를 크게 축소 적용"
- ],
+ "warnings": [],
  "starballs": 3,
  "goal": 7
 }
