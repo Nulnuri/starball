@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-03T14:55:35+09:00",
+ "generated": "2026-10-04T15:32:28+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -10,7 +10,7 @@
   }
  },
  "game": {
-  "date": "2026-10-03",
+  "date": "2026-10-04",
   "time": "14:00",
   "stadium": "잠실",
   "lg": "LG",
@@ -28,23 +28,29 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.5301,
+   "prob": 0.5004,
    "options": [
     {
      "label": "승",
-     "prob": 0.5301
+     "prob": 0.5004
     },
     {
      "label": "무",
-     "prob": 0.0173
+     "prob": 0.0174
     },
     {
      "label": "패",
-     "prob": 0.4526
+     "prob": 0.4822
     }
    ],
    "model": "learned",
    "reasons": [
+    {
+     "key": "my_sp_era",
+     "label": "LG 선발 ERA",
+     "value": "8.44",
+     "weight": -0.3975
+    },
     {
      "key": "my_win",
      "label": "LG 시즌 승률",
@@ -52,28 +58,22 @@
      "weight": 0.0846
     },
     {
-     "key": "op_sp_era",
-     "label": "상대 선발 ERA",
-     "value": "3.38",
-     "weight": -0.0741
-    },
-    {
-     "key": "my_sp_era",
-     "label": "LG 선발 ERA",
-     "value": "3.55",
-     "weight": 0.0581
-    },
-    {
      "key": "home",
      "label": "홈/원정",
      "value": "홈",
      "weight": 0.0561
+    },
+    {
+     "key": "op_win",
+     "label": "상대 시즌 승률",
+     "value": "0.530",
+     "weight": -0.0523
     }
    ],
    "blend": {
     "model": 0.3,
     "teamWin": 0.553,
-    "modelPick": "승",
+    "modelPick": "패",
     "priorPick": "승"
    },
    "confidence": "낮음",
@@ -183,58 +183,58 @@
   }
  ],
  "joint": {
-  "prob": 0.0615,
+  "prob": 0.0578,
   "baseline": 0.0555,
   "confidence": "낮음"
  },
  "score": {
-  "lg": 4.2,
-  "opp": 4.6,
+  "lg": 4.9,
+  "opp": 5.6,
   "modal": [
    3,
-   3
+   4
   ]
  },
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "카라스코",
-    "era": 3.55,
-    "whip": 0.97,
-    "ip": 50.7,
-    "games": 9,
-    "spot": false,
+    "name": "김윤식",
+    "era": 6.4,
+    "whip": 1.76,
+    "ip": 32.3,
+    "games": 30,
+    "spot": true,
     "vs": {
      "foe": "KIA",
      "era": 0.0,
-     "ip": 0.0,
-     "games": 0
-    },
-    "recent": {
-     "era": 3.76,
-     "whip": 1.14,
-     "ip": 26.3,
-     "starts": 5,
-     "asStarter": 5
-    }
-   },
-   "opp": {
-    "name": "네일",
-    "era": 3.45,
-    "whip": 1.17,
-    "ip": 169.7,
-    "games": 29,
-    "spot": false,
-    "vs": {
-     "foe": "LG",
-     "era": 3.97,
-     "ip": 11.3,
+     "ip": 3.3,
      "games": 2
     },
     "recent": {
-     "era": 2.17,
-     "whip": 1.17,
-     "ip": 29.0,
+     "era": 5.4,
+     "whip": 2.1,
+     "ip": 3.3,
+     "starts": 2,
+     "asStarter": 1
+    }
+   },
+   "opp": {
+    "name": "시라카와",
+    "era": 4.5,
+    "whip": 1.37,
+    "ip": 76.0,
+    "games": 16,
+    "spot": false,
+    "vs": {
+     "foe": "LG",
+     "era": 7.5,
+     "ip": 6.0,
+     "games": 1
+    },
+    "recent": {
+     "era": 4.62,
+     "whip": 1.18,
+     "ip": 25.3,
      "starts": 5,
      "asStarter": 5
     }
@@ -251,16 +251,20 @@
   },
   "form": {
    "lg": "패패패패패",
-   "opp": "패패패승패"
+   "opp": "승패패패승"
   },
   "h2h": {
    "w": 7,
-   "l": 5,
+   "l": 6,
    "d": 0,
-   "games": 12
+   "games": 13
   }
  },
- "warnings": [],
+ "warnings": [
+  "LG 선발 김윤식은 등판당 1.1이닝(30경기)로 불펜/임시 선발 패턴 — 소화 이닝 불확실",
+  "김윤식의 KIA전 표본은 3.3이닝(2경기)뿐 — 상대 ERA를 크게 축소 적용",
+  "시라카와의 LG전 표본은 6.0이닝(1경기)뿐 — 상대 ERA를 크게 축소 적용"
+ ],
  "starballs": 3,
  "goal": 7
 }
