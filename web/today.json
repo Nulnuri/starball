@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-04T15:32:28+09:00",
+ "generated": "2026-10-05T15:26:29+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -10,7 +10,7 @@
   }
  },
  "game": {
-  "date": "2026-10-04",
+  "date": "2026-10-05",
   "time": "14:00",
   "stadium": "잠실",
   "lg": "LG",
@@ -28,51 +28,51 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.5004,
+   "prob": 0.5176,
    "options": [
     {
      "label": "승",
-     "prob": 0.5004
+     "prob": 0.5176
     },
     {
      "label": "무",
-     "prob": 0.0174
+     "prob": 0.0183
     },
     {
      "label": "패",
-     "prob": 0.4822
+     "prob": 0.4641
     }
    ],
    "model": "learned",
    "reasons": [
     {
-     "key": "my_sp_era",
-     "label": "LG 선발 ERA",
-     "value": "8.44",
-     "weight": -0.3975
+     "key": "op_sp_era",
+     "label": "상대 선발 ERA",
+     "value": "2.96",
+     "weight": -0.1132
     },
     {
      "key": "my_win",
      "label": "LG 시즌 승률",
-     "value": "0.553",
-     "weight": 0.0846
+     "value": "0.550",
+     "weight": 0.0794
+    },
+    {
+     "key": "op_win",
+     "label": "상대 시즌 승률",
+     "value": "0.533",
+     "weight": -0.0567
     },
     {
      "key": "home",
      "label": "홈/원정",
      "value": "홈",
      "weight": 0.0561
-    },
-    {
-     "key": "op_win",
-     "label": "상대 시즌 승률",
-     "value": "0.530",
-     "weight": -0.0523
     }
    ],
    "blend": {
     "model": 0.3,
-    "teamWin": 0.553,
+    "teamWin": 0.55,
     "modelPick": "패",
     "priorPick": "승"
    },
@@ -144,23 +144,23 @@
     "base": 33.6,
     "gain": 0.9
    },
-   "prob": 0.5207,
+   "prob": 0.5216,
    "options": [
     {
      "label": "0개",
-     "prob": 0.5207
+     "prob": 0.5216
     },
     {
      "label": "1개",
-     "prob": 0.3142
+     "prob": 0.3139
     },
     {
      "label": "2개",
-     "prob": 0.1261
+     "prob": 0.1257
     },
     {
      "label": "3개",
-     "prob": 0.0322
+     "prob": 0.032
     },
     {
      "label": "4개",
@@ -177,19 +177,19 @@
      "key": "park",
      "label": "구장",
      "value": "0.73",
-     "weight": 0.2927
+     "weight": 0.2955
     }
    ]
   }
  ],
  "joint": {
-  "prob": 0.0578,
+  "prob": 0.0601,
   "baseline": 0.0555,
   "confidence": "낮음"
  },
  "score": {
-  "lg": 4.9,
-  "opp": 5.6,
+  "lg": 3.9,
+  "opp": 5.2,
   "modal": [
    3,
    4
@@ -198,43 +198,43 @@
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "김윤식",
-    "era": 6.4,
-    "whip": 1.76,
-    "ip": 32.3,
-    "games": 30,
-    "spot": true,
+    "name": "톨허스트",
+    "era": 4.34,
+    "whip": 1.27,
+    "ip": 153.3,
+    "games": 28,
+    "spot": false,
     "vs": {
      "foe": "KIA",
-     "era": 0.0,
-     "ip": 3.3,
-     "games": 2
+     "era": 7.04,
+     "ip": 15.3,
+     "games": 4
     },
     "recent": {
-     "era": 5.4,
-     "whip": 2.1,
-     "ip": 3.3,
-     "starts": 2,
-     "asStarter": 1
+     "era": 3.96,
+     "whip": 1.28,
+     "ip": 25.0,
+     "starts": 5,
+     "asStarter": 5
     }
    },
    "opp": {
-    "name": "시라카와",
-    "era": 4.5,
-    "whip": 1.37,
-    "ip": 76.0,
-    "games": 16,
+    "name": "올러",
+    "era": 2.92,
+    "whip": 1.05,
+    "ip": 166.3,
+    "games": 28,
     "spot": false,
     "vs": {
      "foe": "LG",
-     "era": 7.5,
-     "ip": 6.0,
-     "games": 1
+     "era": 1.5,
+     "ip": 24.0,
+     "games": 4
     },
     "recent": {
-     "era": 4.62,
-     "whip": 1.18,
-     "ip": 25.3,
+     "era": 2.56,
+     "whip": 1.01,
+     "ip": 31.7,
      "starts": 5,
      "asStarter": 5
     }
@@ -242,8 +242,8 @@
   },
   "park": {
    "name": "잠실",
-   "raw": 0.7348,
-   "applied": 0.867
+   "raw": 0.7322,
+   "applied": 0.866
   },
   "bullpen": {
    "lg": 5.541,
@@ -251,20 +251,16 @@
   },
   "form": {
    "lg": "패패패패패",
-   "opp": "승패패패승"
+   "opp": "승승패패패"
   },
   "h2h": {
    "w": 7,
-   "l": 6,
+   "l": 7,
    "d": 0,
-   "games": 13
+   "games": 14
   }
  },
- "warnings": [
-  "LG 선발 김윤식은 등판당 1.1이닝(30경기)로 불펜/임시 선발 패턴 — 소화 이닝 불확실",
-  "김윤식의 KIA전 표본은 3.3이닝(2경기)뿐 — 상대 ERA를 크게 축소 적용",
-  "시라카와의 LG전 표본은 6.0이닝(1경기)뿐 — 상대 ERA를 크게 축소 적용"
- ],
+ "warnings": [],
  "starballs": 3,
  "goal": 7
 }
