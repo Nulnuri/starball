@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-05T15:26:29+09:00",
+ "generated": "2026-10-06T16:02:33+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -10,11 +10,11 @@
   }
  },
  "game": {
-  "date": "2026-10-05",
-  "time": "14:00",
+  "date": "2026-10-06",
+  "time": "18:30",
   "stadium": "잠실",
   "lg": "LG",
-  "opp": "KIA",
+  "opp": "NC",
   "lgIsHome": true
  },
  "missions": [
@@ -28,19 +28,19 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.5176,
+   "prob": 0.5636,
    "options": [
     {
      "label": "승",
-     "prob": 0.5176
+     "prob": 0.5636
     },
     {
      "label": "무",
-     "prob": 0.0183
+     "prob": 0.0173
     },
     {
      "label": "패",
-     "prob": 0.4641
+     "prob": 0.4191
     }
    ],
    "model": "learned",
@@ -48,20 +48,20 @@
     {
      "key": "op_sp_era",
      "label": "상대 선발 ERA",
-     "value": "2.96",
-     "weight": -0.1132
+     "value": "7.20",
+     "weight": 0.2819
     },
     {
      "key": "my_win",
      "label": "LG 시즌 승률",
-     "value": "0.550",
-     "weight": 0.0794
+     "value": "0.546",
+     "weight": 0.0742
     },
     {
-     "key": "op_win",
-     "label": "상대 시즌 승률",
-     "value": "0.533",
-     "weight": -0.0567
+     "key": "my_form10",
+     "label": "LG 최근 10경기",
+     "value": "0.300",
+     "weight": -0.0623
     },
     {
      "key": "home",
@@ -72,12 +72,12 @@
    ],
    "blend": {
     "model": 0.3,
-    "teamWin": 0.55,
-    "modelPick": "패",
+    "teamWin": 0.546,
+    "modelPick": "승",
     "priorPick": "승"
    },
    "confidence": "낮음",
-   "tierAccuracy": 57.0
+   "tierAccuracy": 59.0
   },
   {
    "n": 2,
@@ -144,23 +144,23 @@
     "base": 33.6,
     "gain": 0.9
    },
-   "prob": 0.5216,
+   "prob": 0.5205,
    "options": [
     {
      "label": "0개",
-     "prob": 0.5216
+     "prob": 0.5205
     },
     {
      "label": "1개",
-     "prob": 0.3139
+     "prob": 0.3143
     },
     {
      "label": "2개",
-     "prob": 0.1257
+     "prob": 0.1261
     },
     {
      "label": "3개",
-     "prob": 0.032
+     "prob": 0.0323
     },
     {
      "label": "4개",
@@ -176,91 +176,95 @@
     {
      "key": "park",
      "label": "구장",
-     "value": "0.73",
-     "weight": 0.2955
+     "value": "0.74",
+     "weight": 0.292
     }
    ]
   }
  ],
  "joint": {
-  "prob": 0.0601,
+  "prob": 0.0657,
   "baseline": 0.0555,
-  "confidence": "낮음"
+  "confidence": "보통"
  },
  "score": {
-  "lg": 3.9,
-  "opp": 5.2,
+  "lg": 5.5,
+  "opp": 5.3,
   "modal": [
-   3,
+   4,
    4
   ]
  },
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "톨허스트",
-    "era": 4.34,
-    "whip": 1.27,
-    "ip": 153.3,
+    "name": "박시원",
+    "era": 4.0,
+    "whip": 1.52,
+    "ip": 54.0,
     "games": 28,
-    "spot": false,
+    "spot": true,
     "vs": {
-     "foe": "KIA",
-     "era": 7.04,
-     "ip": 15.3,
+     "foe": "NC",
+     "era": 11.74,
+     "ip": 7.7,
      "games": 4
     },
     "recent": {
-     "era": 3.96,
-     "whip": 1.28,
-     "ip": 25.0,
+     "era": 4.19,
+     "whip": 1.45,
+     "ip": 19.3,
      "starts": 5,
      "asStarter": 5
     }
    },
    "opp": {
-    "name": "올러",
-    "era": 2.92,
-    "whip": 1.05,
-    "ip": 166.3,
-    "games": 28,
-    "spot": false,
+    "name": "최성영",
+    "era": 1.42,
+    "whip": 1.58,
+    "ip": 6.3,
+    "games": 6,
+    "spot": true,
     "vs": {
      "foe": "LG",
-     "era": 1.5,
-     "ip": 24.0,
-     "games": 4
+     "era": 0.0,
+     "ip": 0.0,
+     "games": 0
     },
     "recent": {
-     "era": 2.56,
-     "whip": 1.01,
-     "ip": 31.7,
-     "starts": 5,
-     "asStarter": 5
+     "era": 0.0,
+     "whip": 1.36,
+     "ip": 3.7,
+     "starts": 2,
+     "asStarter": 0
     }
    }
   },
   "park": {
    "name": "잠실",
-   "raw": 0.7322,
-   "applied": 0.866
+   "raw": 0.7354,
+   "applied": 0.868
   },
   "bullpen": {
    "lg": 5.541,
-   "opp": 5.247
+   "opp": 6.203
   },
   "form": {
    "lg": "패패패패패",
-   "opp": "승승패패패"
+   "opp": "패패승패패"
   },
   "h2h": {
-   "w": 7,
-   "l": 7,
+   "w": 9,
+   "l": 6,
    "d": 0,
-   "games": 14
+   "games": 15
   }
  },
- "warnings": [],
+ "warnings": [
+  "LG 선발 박시원은 등판당 1.9이닝(28경기)로 불펜/임시 선발 패턴 — 소화 이닝 불확실",
+  "박시원의 NC전 표본은 7.7이닝(4경기)뿐 — 상대 ERA를 크게 축소 적용",
+  "NC 선발 최성영은 등판당 1.1이닝(6경기)로 불펜/임시 선발 패턴 — 소화 이닝 불확실"
+ ],
  "starballs": 3,
  "goal": 7
 }
