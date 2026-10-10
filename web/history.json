@@ -1,30 +1,105 @@
 {
- "updated": "2026-10-09T16:00:30+09:00",
+ "updated": "2026-10-10T15:33:35+09:00",
  "starballs": 3,
  "goal": 7,
- "settled": 39,
+ "settled": 40,
  "allHit": 3,
- "rate": 0.0769,
+ "rate": 0.075,
  "replayed": 14,
- "live": 25,
+ "live": 26,
  "perMission": {
   "outcome": {
    "label": "승패 맞히기",
    "hit": 20,
-   "total": 39
+   "total": 40
   },
   "margin": {
    "label": "득실 차 맞히기",
    "hit": 14,
-   "total": 39
+   "total": 40
   },
   "lg_hr": {
    "label": "홈런 수 맞히기",
    "hit": 16,
-   "total": 39
+   "total": 40
   }
  },
  "games": [
+  {
+   "date": "2026-10-10",
+   "opp": "롯데",
+   "home": false,
+   "picks": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "settled": false,
+   "belief": {
+    "outcome": {
+     "승": 0.5256,
+     "무": 0.0197,
+     "패": 0.4547
+    },
+    "margin": {
+     "1점": 0.2287,
+     "2점": 0.1621,
+     "3점": 0.1246,
+     "5점": 0.1058,
+     "4점": 0.087,
+     "6점": 0.0802,
+     "9점 이상": 0.0785,
+     "7점": 0.0649,
+     "8점": 0.0444,
+     "0점": 0.0239
+    },
+    "lg_hr": {
+     "0개": 0.4728,
+     "1개": 0.3297,
+     "2개": 0.1448,
+     "3개": 0.0421,
+     "4개": 0.0072,
+     "5개 이상": 0.0034
+    }
+   },
+   "jointProb": 0.0552,
+   "baseline": 0.0555,
+   "expScore": {
+    "lg": 5.1,
+    "opp": 4.9,
+    "modal": [
+     3,
+     3
+    ]
+   },
+   "starters": {
+    "lg": {
+     "name": "톨허스트",
+     "era": 4.32,
+     "spot": false
+    },
+    "opp": {
+     "name": "나균안",
+     "era": 4.29,
+     "spot": false
+    }
+   },
+   "params": {
+    "blend": 0.7,
+    "calib": 0.76,
+    "version": "2026-10-10"
+   },
+   "greedy": {
+    "outcome": "패",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "greedyProb": 0.0575,
+   "actual": null,
+   "hits": null,
+   "earned": null,
+   "score": null
+  },
   {
    "date": "2026-10-09",
    "opp": "롯데",
@@ -34,7 +109,7 @@
     "margin": "1점",
     "lg_hr": "0개"
    },
-   "settled": false,
+   "settled": true,
    "belief": {
     "outcome": {
      "승": 0.5612,
@@ -95,10 +170,21 @@
     "lg_hr": "0개"
    },
    "greedyProb": 0.0591,
-   "actual": null,
-   "hits": null,
-   "earned": null,
-   "score": null
+   "actual": {
+    "outcome": "패",
+    "margin": "8점",
+    "lg_hr": "1개"
+   },
+   "hits": {
+    "outcome": false,
+    "margin": false,
+    "lg_hr": false
+   },
+   "earned": false,
+   "score": {
+    "lg": 1,
+    "opp": 9
+   }
   },
   {
    "date": "2026-10-07",
