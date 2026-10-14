@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-12T15:48:35+09:00",
+ "generated": "2026-10-14T14:39:29+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -10,12 +10,12 @@
   }
  },
  "game": {
-  "date": "2026-10-12",
+  "date": "2026-10-14",
   "time": "18:30",
-  "stadium": "광주",
+  "stadium": "잠실",
   "lg": "LG",
-  "opp": "KIA",
-  "lgIsHome": false
+  "opp": "두산",
+  "lgIsHome": true
  },
  "missions": [
   {
@@ -28,34 +28,34 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.5108,
+   "prob": 0.5091,
    "options": [
     {
      "label": "승",
-     "prob": 0.5108
+     "prob": 0.5091
     },
     {
      "label": "무",
-     "prob": 0.0195
+     "prob": 0.0185
     },
     {
      "label": "패",
-     "prob": 0.4697
+     "prob": 0.4724
     }
    ],
    "model": "learned",
    "reasons": [
     {
-     "key": "my_win",
-     "label": "LG 시즌 승률",
-     "value": "0.548",
-     "weight": 0.0767
+     "key": "op_sp_era",
+     "label": "상대 선발 ERA",
+     "value": "2.35",
+     "weight": -0.1701
     },
     {
-     "key": "op_win",
-     "label": "상대 시즌 승률",
-     "value": "0.545",
-     "weight": -0.0729
+     "key": "my_win",
+     "label": "LG 시즌 승률",
+     "value": "0.544",
+     "weight": 0.0718
     },
     {
      "key": "my_form10",
@@ -66,13 +66,13 @@
     {
      "key": "home",
      "label": "홈/원정",
-     "value": "원정",
-     "weight": -0.0561
+     "value": "홈",
+     "weight": 0.0561
     }
    ],
    "blend": {
     "model": 0.3,
-    "teamWin": 0.548,
+    "teamWin": 0.544,
     "modelPick": "패",
     "priorPick": "승"
    },
@@ -144,31 +144,31 @@
     "base": 33.6,
     "gain": 0.9
    },
-   "prob": 0.3597,
+   "prob": 0.5193,
    "options": [
     {
      "label": "0개",
-     "prob": 0.3597
+     "prob": 0.5193
     },
     {
      "label": "1개",
-     "prob": 0.3497
+     "prob": 0.3147
     },
     {
      "label": "2개",
-     "prob": 0.1893
+     "prob": 0.1266
     },
     {
      "label": "3개",
-     "prob": 0.0742
+     "prob": 0.0325
     },
     {
      "label": "4개",
-     "prob": 0.0185
+     "prob": 0.0047
     },
     {
      "label": "5개 이상",
-     "prob": 0.0085
+     "prob": 0.0023
     }
    ],
    "model": "learned",
@@ -176,92 +176,92 @@
     {
      "key": "park",
      "label": "구장",
-     "value": "1.17",
-     "weight": -0.1845
+     "value": "0.74",
+     "weight": 0.2884
     }
    ]
   }
  ],
  "joint": {
-  "prob": 0.0404,
+  "prob": 0.0588,
   "baseline": 0.0555,
   "confidence": "낮음"
  },
  "score": {
-  "lg": 4.8,
-  "opp": 5.7,
+  "lg": 3.4,
+  "opp": 4.5,
   "modal": [
-   3,
-   4
+   2,
+   3
   ]
  },
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "임찬규",
-    "era": 4.44,
-    "whip": 1.35,
-    "ip": 166.3,
-    "games": 30,
+    "name": "카라스코",
+    "era": 4.05,
+    "whip": 1.03,
+    "ip": 60.0,
+    "games": 11,
     "spot": false,
     "vs": {
-     "foe": "KIA",
-     "era": 6.75,
-     "ip": 5.3,
+     "foe": "두산",
+     "era": 0.0,
+     "ip": 7.0,
      "games": 1
     },
     "recent": {
-     "era": 5.93,
-     "whip": 1.17,
-     "ip": 27.3,
+     "era": 4.94,
+     "whip": 1.31,
+     "ip": 23.7,
      "starts": 5,
      "asStarter": 5
     }
    },
    "opp": {
-    "name": "양현종",
-    "era": 4.29,
-    "whip": 1.47,
-    "ip": 119.7,
-    "games": 25,
+    "name": "곽빈",
+    "era": 2.24,
+    "whip": 1.04,
+    "ip": 161.0,
+    "games": 27,
     "spot": false,
     "vs": {
      "foe": "LG",
-     "era": 4.61,
-     "ip": 13.7,
+     "era": 1.96,
+     "ip": 18.3,
      "games": 3
     },
     "recent": {
-     "era": 4.82,
-     "whip": 1.66,
-     "ip": 18.7,
+     "era": 1.73,
+     "whip": 0.88,
+     "ip": 26.0,
      "starts": 4,
      "asStarter": 4
     }
    }
   },
   "park": {
-   "name": "광주",
-   "raw": 1.1684,
-   "applied": 1.084
+   "name": "잠실",
+   "raw": 0.7387,
+   "applied": 0.869
   },
   "bullpen": {
    "lg": 5.541,
-   "opp": 5.247
+   "opp": 4.663
   },
   "form": {
-   "lg": "승패승승패",
-   "opp": "패승승승패"
+   "lg": "패승패승승",
+   "opp": "패패승승승"
   },
   "h2h": {
-   "w": 7,
-   "l": 8,
-   "d": 0,
-   "games": 15
+   "w": 11,
+   "l": 4,
+   "d": 1,
+   "games": 16
   }
  },
  "warnings": [
-  "임찬규의 KIA전 표본은 5.3이닝(1경기)뿐 — 상대 ERA를 크게 축소 적용"
+  "카라스코의 두산전 표본은 7.0이닝(1경기)뿐 — 상대 ERA를 크게 축소 적용"
  ],
  "starballs": 4,
  "goal": 7
