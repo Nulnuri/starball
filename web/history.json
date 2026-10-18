@@ -1,30 +1,105 @@
 {
- "updated": "2026-10-17T14:13:10+09:00",
+ "updated": "2026-10-18T14:17:08+09:00",
  "starballs": 4,
  "goal": 7,
- "settled": 43,
+ "settled": 44,
  "allHit": 4,
- "rate": 0.093,
+ "rate": 0.0909,
  "replayed": 14,
- "live": 29,
+ "live": 30,
  "perMission": {
   "outcome": {
    "label": "승패 맞히기",
    "hit": 22,
-   "total": 43
+   "total": 44
   },
   "margin": {
    "label": "득실 차 맞히기",
    "hit": 15,
-   "total": 43
+   "total": 44
   },
   "lg_hr": {
    "label": "홈런 수 맞히기",
    "hit": 17,
-   "total": 43
+   "total": 44
   }
  },
  "games": [
+  {
+   "date": "2026-10-18",
+   "opp": "KIA",
+   "home": false,
+   "picks": {
+    "outcome": "승",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "settled": false,
+   "belief": {
+    "outcome": {
+     "승": 0.5015,
+     "무": 0.0217,
+     "패": 0.4768
+    },
+    "margin": {
+     "1점": 0.2287,
+     "2점": 0.1621,
+     "3점": 0.1246,
+     "5점": 0.1058,
+     "4점": 0.087,
+     "6점": 0.0802,
+     "9점 이상": 0.0785,
+     "7점": 0.0649,
+     "8점": 0.0444,
+     "0점": 0.0239
+    },
+    "lg_hr": {
+     "0개": 0.3595,
+     "1개": 0.3498,
+     "2개": 0.1894,
+     "3개": 0.0743,
+     "4개": 0.0185,
+     "5개 이상": 0.0085
+    }
+   },
+   "jointProb": 0.0397,
+   "baseline": 0.0555,
+   "expScore": {
+    "lg": 3.8,
+    "opp": 5.6,
+    "modal": [
+     2,
+     3
+    ]
+   },
+   "starters": {
+    "lg": {
+     "name": "임찬규",
+     "era": 4.46,
+     "spot": false
+    },
+    "opp": {
+     "name": "올러",
+     "era": 3.13,
+     "spot": false
+    }
+   },
+   "params": {
+    "blend": 0.7,
+    "calib": 0.76,
+    "version": "2026-10-18"
+   },
+   "greedy": {
+    "outcome": "패",
+    "margin": "1점",
+    "lg_hr": "0개"
+   },
+   "greedyProb": 0.0454,
+   "actual": null,
+   "hits": null,
+   "earned": null,
+   "score": null
+  },
   {
    "date": "2026-10-17",
    "opp": "KIA",
@@ -34,7 +109,7 @@
     "margin": "1점",
     "lg_hr": "0개"
    },
-   "settled": false,
+   "settled": true,
    "belief": {
     "outcome": {
      "승": 0.5074,
@@ -95,10 +170,21 @@
     "lg_hr": "0개"
    },
    "greedyProb": 0.0452,
-   "actual": null,
-   "hits": null,
-   "earned": null,
-   "score": null
+   "actual": {
+    "outcome": "패",
+    "margin": "4점",
+    "lg_hr": "1개"
+   },
+   "hits": {
+    "outcome": false,
+    "margin": false,
+    "lg_hr": false
+   },
+   "earned": false,
+   "score": {
+    "lg": 1,
+    "opp": 5
+   }
   },
   {
    "date": "2026-10-14",

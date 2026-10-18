@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-17T14:13:10+09:00",
+ "generated": "2026-10-18T14:17:08+09:00",
  "outcomeSkill": {
   "overall": 57.0,
   "validation": {
@@ -10,7 +10,7 @@
   }
  },
  "game": {
-  "date": "2026-10-17",
+  "date": "2026-10-18",
   "time": "14:00",
   "stadium": "광주",
   "lg": "LG",
@@ -28,23 +28,29 @@
     "base": 48.6,
     "gain": 8.9
    },
-   "prob": 0.5074,
+   "prob": 0.5015,
    "options": [
     {
      "label": "승",
-     "prob": 0.5074
+     "prob": 0.5015
     },
     {
      "label": "무",
-     "prob": 0.0177
+     "prob": 0.0217
     },
     {
      "label": "패",
-     "prob": 0.4749
+     "prob": 0.4768
     }
    ],
    "model": "learned",
    "reasons": [
+    {
+     "key": "op_sp_era",
+     "label": "상대 선발 ERA",
+     "value": "3.16",
+     "weight": -0.0946
+    },
     {
      "key": "my_win",
      "label": "LG 시즌 승률",
@@ -56,12 +62,6 @@
      "label": "상대 시즌 승률",
      "value": "0.545",
      "weight": -0.0721
-    },
-    {
-     "key": "op_sp_era",
-     "label": "상대 선발 ERA",
-     "value": "3.43",
-     "weight": -0.0698
     },
     {
      "key": "op_form10",
@@ -183,58 +183,58 @@
   }
  ],
  "joint": {
-  "prob": 0.0401,
+  "prob": 0.0397,
   "baseline": 0.0555,
   "confidence": "낮음"
  },
  "score": {
-  "lg": 4.2,
+  "lg": 3.8,
   "opp": 5.6,
   "modal": [
-   3,
-   4
+   2,
+   3
   ]
  },
  "reasoning": {
   "starters": {
    "lg": {
-    "name": "톨허스트",
-    "era": 4.24,
-    "whip": 1.26,
-    "ip": 163.3,
-    "games": 30,
+    "name": "임찬규",
+    "era": 4.46,
+    "whip": 1.34,
+    "ip": 169.7,
+    "games": 31,
     "spot": false,
     "vs": {
      "foe": "KIA",
-     "era": 6.2,
-     "ip": 20.3,
-     "games": 5
+     "era": 6.23,
+     "ip": 8.7,
+     "games": 2
     },
     "recent": {
-     "era": 4.56,
-     "whip": 1.35,
+     "era": 6.08,
+     "whip": 1.23,
      "ip": 23.7,
      "starts": 5,
      "asStarter": 5
     }
    },
    "opp": {
-    "name": "네일",
-    "era": 3.49,
-    "whip": 1.16,
-    "ip": 183.0,
-    "games": 31,
+    "name": "올러",
+    "era": 3.13,
+    "whip": 1.08,
+    "ip": 178.0,
+    "games": 30,
     "spot": false,
     "vs": {
      "foe": "LG",
-     "era": 4.58,
-     "ip": 17.7,
-     "games": 3
+     "era": 2.4,
+     "ip": 30.0,
+     "games": 5
     },
     "recent": {
-     "era": 2.67,
-     "whip": 1.09,
-     "ip": 30.3,
+     "era": 4.25,
+     "whip": 1.35,
+     "ip": 29.7,
      "starts": 5,
      "asStarter": 5
     }
@@ -250,17 +250,19 @@
    "opp": 5.247
   },
   "form": {
-   "lg": "승패승패승",
-   "opp": "승패승승승"
+   "lg": "패승패승패",
+   "opp": "승승패승승"
   },
   "h2h": {
    "w": 7,
-   "l": 9,
+   "l": 10,
    "d": 0,
-   "games": 16
+   "games": 17
   }
  },
- "warnings": [],
+ "warnings": [
+  "임찬규의 KIA전 표본은 8.7이닝(2경기)뿐 — 상대 ERA를 크게 축소 적용"
+ ],
  "starballs": 4,
  "goal": 7
 }
